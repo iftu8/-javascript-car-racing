@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Cyberpunk Racing - Pro Max</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', Courier, monospace; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .hud { display: flex; justify-content: space-between; padding: 20px; font-size: 24px; font-weight: bold; color: #0ff; text-shadow: 0 0 10px #0ff; }
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0, 0, 0, 0.85); pointer-events: auto; }
+        h1 { font-size: 50px; color: #f0f; text-shadow: 0 0 20px #f0f, 0 0 40px #0ff; margin-bottom: 20px; text-align: center; }
+        .btn { background: #f0f; color: #000; padding: 15px 40px; font-size: 24px; font-weight: bold; border: none; cursor: pointer; box-shadow: 0 0 20px #f0f; text-transform: uppercase; transition: 0.3s; }
+        .btn:hover { background: #0ff; box-shadow: 0 0 30px #0ff; }
+        .hidden { display: none !important; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 20px; }
+    </style>
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+    <div id="loading">Initializing 3D Engine...</div>
+    <div id="ui-layer">
+        <div class="hud">
+            <div>SPEED: <span id="speedVal">0</span> MPH</div>
+            <div>SCORE: <span id="scoreVal">0</span></div>
+            <div>SHIELD: <span id="healthVal">100</span>%</div>
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="menuScreen" class="screen">
+        <h1>NEON OVERDRIVE 3D</h1>
+        <button class="btn" onclick="startGame()">Ignite Engine</button>
+        <p style="color: #888; margin-top: 20px;">Controls: Arrow Keys or A/D</p>
+    </div>
+
+    <!-- Game Over -->
+    <div id="gameOverScreen" class="screen hidden">
+        <h1>SYSTEM FAILURE</h1>
+        <h2 style="color:#fff; margin-bottom: 20px;">Final Score: <span id="finalScore">0</span></h2>
+        <button class="btn" onclick="startGame()">Reboot</button>
+    </div>
+
+    <script>
+        // Game Variables
+        let scene, camera, renderer;
+        let playerCar, roadGrid;
+        let obstacles = [];
+        let gameState = 'MENU';
+        let speed = 0, score = 0, health = 100;
+        let keys = { left: false, right: false };
+        let clock = new THREE.Clock();
+
+        // Initialization
+        function init() {
+            document.getElementById('loading').style.display = 'none';
+            
+            // Setup Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050510);
+            scene.fog = new THREE.FogExp2(0x050510, 0.005); // Neon Fog
+
+            // Setup Camera
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, -15);
+            camera.lookAt(0, 0, 20);
+
+            // Setup Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(ambientLight);
+            const pointLight = new THREE.PointLight(0xff00ff, 2, 50);
+            pointLight.position.set(0, 10, 0);
+            scene.add(pointLight);
+
+            // Create Player Car
+            const carGeometry = new THREE.BoxGeometry(2, 1, 4);
+            const carMaterial = new THREE.MeshPhongMaterial({ color: 0x222222, emissive: 0x111111, shininess: 100 });
+            playerCar = new THREE.Mesh(carGeometry, carMaterial);
+            playerCar.position.set(0, 0.5, 0);
+            
+            // Car Neon Edges
+            const edgeGeo = new THREE.EdgesGeometry(carGeometry);
+            const edgeMat = new THREE.LineBasicMaterial({ color: 0x00ffff, linewidth: 2 });
+            const carEdges = new THREE.LineSegments(edgeGeo, edgeMat);
+            playerCar.add(carEdges);
+            scene.add(playerCar);
+
+            // Create Moving Cyberpunk Grid (Road)
+            const gridHelper = new THREE.GridHelper(200, 100, 0xff00ff, 0x00ffff);
+            gridHelper.position.y = 0;
+            scene.add(gridHelper);
+            roadGrid = gridHelper;
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize, false);
+            window.addEventListener('keydown', e => {
+                if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+                if(e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+            });
+            window.addEventListener('keyup', e => {
+                if(e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+                if(e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+            });
+
+            // Touch Controls
+            window.addEventListener('touchstart', e => {
+                if(e.touches[0].clientX < window.innerWidth/2) { keys.left = true; keys.right = false; }
+                else { keys.right = true; keys.left = false; }
+            });
+            window.addEventListener('touchend', () => { keys.left = false; keys.right = false; });
+
+            animate();
+        }
+
+        function spawnObstacle() {
+            const obsGeo = new THREE.BoxGeometry(2, 2, 2);
+            const obsMat = new THREE.MeshPhongMaterial({ color: 0xff0055, emissive: 0xff0055, emissiveIntensity: 0.5 });
+            const obstacle = new THREE.Mesh(obsGeo, obsMat);
+            
+            // Random position ahead
+            obstacle.position.set((Math.random() - 0.5) * 30, 1, 200);
+            scene.add(obstacle);
+            obstacles.push(obstacle);
+        }
+
+        function startGame() {
+            document.getElementById('menuScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            
+            // Reset Stats
+            score = 0; speed = 150; health = 100;
+            playerCar.position.x = 0;
+            
+            // Clear Old Obstacles
+            obstacles.forEach(obs => scene.remove(obs));
+            obstacles = [];
+            
+            gameState = 'PLAYING';
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            document.getElementById('finalScore').innerText = Math.floor(score);
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Main Game Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            if (gameState === 'PLAYING') {
+                score += (speed / 100) * delta;
+                
+                // Car Movement (Smooth Lerp)
+                const targetX = keys.left ? playerCar.position.x - 0.5 : (keys.right ? playerCar.position.x + 0.5 : playerCar.position.x);
+                playerCar.position.x += (targetX - playerCar.position.x) * 10 * delta;
+                
+                // Clamp position
+                if(playerCar.position.x > 15) playerCar.position.x = 15;
+                if(playerCar.position.x < -15) playerCar.position.x = -15;
+
+                // Animate Grid to simulate speed
+                roadGrid.position.z -= speed * delta;
+                if (roadGrid.position.z < -20) {
+                    roadGrid.position.z = 0;
+                }
+
+                // Obstacle Logic
+                if (Math.random() < 0.05) spawnObstacle();
+
+                for (let i = obstacles.length - 1; i >= 0; i--) {
+                    obstacles[i].position.z -= (speed * delta);
+                    
+                    // Collision Detection (Bounding Box)
+                    const dist = playerCar.position.distanceTo(obstacles[i].position);
+                    if (dist < 3) {
+                        health -= 25;
+                        scene.remove(obstacles[i]);
+                        obstacles.splice(i, 1);
+                        // Flash red
+                        scene.background = new THREE.Color(0xff0000);
+                        setTimeout(() => scene.background = new THREE.Color(0x050510), 100);
+                        
+                        if (health <= 0) gameOver();
+                    } else if (obstacles[i].position.z < -10) {
+                        scene.remove(obstacles[i]);
+                        obstacles.splice(i, 1);
+                    }
+                }
+
+                // Camera follow
+                camera.position.x += (playerCar.position.x - camera.position.x) * 5 * delta;
+
+                // Update UI
+                document.getElementById('speedVal').innerText = Math.floor(speed);
+                document.getElementById('scoreVal').innerText = Math.floor(score);
+                document.getElementById('healthVal').innerText = health;
+                speed += delta * 2; // Progressive difficulty
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // Start Engine
+        window.onload = init;
+    </script>
+</body>
+</html>
