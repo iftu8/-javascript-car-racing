@@ -1,62 +1,72 @@
 <div align="center">
-  <img src="https://media.giphy.com/media/l41JPUzJqI6WwsJwc/giphy.gif" alt="Neon Car Racing" width="100%" style="border-radius: 15px; border: 2px solid #00FF41; box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);"/>
   
+  <!-- Animated Cyberpunk Banner -->
+  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMjM4bXhjYnJ2MzIxaG1qMnU4bzZ4NGh3ZHB4N3R1c2o1ZHM4Z3ZqZiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3ov9jE038U8H0yWqM8/giphy.gif" alt="Cyberpunk Racing" width="100%" style="border-radius: 15px; box-shadow: 0 0 20px #FF007F;">
+
   <br><br>
 
-  <h1>🏎️ JavaScript Neon Car Racing 🏎️</h1>
-  <p><b>Simple and extended 2D Car Racing game built with HTML, CSS, and Vanilla JavaScript.</b></p>
+  <h1 align="center">🏎️ NEON CYBERPUNK RACING 🚀</h1>
+  <p align="center"><b>An Ultra-Smooth 60FPS Pseudo-3D Canvas Racing Experience</b></p>
 
-  <p>
+  <!-- Badges -->
+  <p align="center">
     <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white" alt="HTML5">
     <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white" alt="CSS3">
     <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript">
-    <img src="https://img.shields.io/badge/Status-Completed-009639?style=for-the-badge" alt="Status">
+    <img src="https://img.shields.io/badge/AI_Engineered-8A2BE2?style=for-the-badge&logo=google-gemini&logoColor=white" alt="AI Engineered">
   </p>
+
+  <br>
+
+  <!-- PLAY NOW BUTTON -->
+  <a href="https://iftu8.github.io/-javascript-car-racing/">
+    <img src="https://img.shields.io/badge/🎮_PLAY_GAME_NOW-FF007F?style=for-the-badge&logo=youtube-gaming&logoColor=white" alt="Play Game Now" width="250">
+  </a>
+  <p><i>Click above to play the game instantly in your browser!</i></p>
+
 </div>
 
-<hr>
-
-## 🎮 About The Game
-This is an extended, high-octane 2D car racing game engineered completely from scratch using Vanilla JavaScript. It features a continuous game loop, progressive difficulty, collision detection, and a sleek neon-cyberpunk UI.
-
-### ✨ Premium Features
-*   **🏎️ Progressive Difficulty:** The game speed automatically increases as your score gets higher.
-*   **💥 Collision Detection:** Precision mathematical bounding box collision logic to detect crashes.
-*   **💾 High Score System:** Uses Browser `localStorage` to save your highest score even after refreshing.
-*   **🎛️ Dynamic HUD:** Real-time Dashboard showing Current Score, High Score, and Speed (KM/H).
-*   **🎨 Cyberpunk Aesthetic:** Custom CSS gradients, neon box-shadows, and smooth animations.
-
 ---
+
+## ⚡ About The Game
+
+Welcome to the neon-lit streets of the future! **Neon Cyberpunk Racing** is a high-octane 2D/3D hybrid racing game built entirely from scratch using pure Vanilla JavaScript and the HTML5 Canvas API. No external libraries, no game engines—just pure code and adrenaline.
+
+Engineered by an advanced **Auto-GPT AI Workflow** directly via GitHub Actions!
+
+<br>
+
+## ✨ Premium Features
+
+* 🌆 **Cyberpunk Aesthetics:** Parallax neon city background, glowing lane dividers, and high-contrast gradients.
+* 🚀 **Progressive Difficulty:** The longer you survive, the faster the game gets. Reflexes are everything.
+* 💥 **Precision Collision Detection:** Mathematical bounding-box logic for pixel-perfect crashes.
+* 🏆 **High Score Persistence:** Your highest score is automatically saved in your browser's `localStorage`.
+* 📱 **Dynamic HUD:** Real-time dashboard showing your Speed (KM/H), Current Score, and Health Bar.
+
+<br>
 
 ## 🕹️ How To Play
 
-It's simple but highly addictive! Navigate your car through heavy traffic without crashing.
+Navigate your hyper-car through heavy traffic without crashing. Stay alive as long as you can!
 
-| Action | Key / Control |
+| Action | Control Key |
 | :--- | :--- |
-| **Move Up** | `Arrow Up` (↑) |
-| **Move Down** | `Arrow Down` (↓) |
-| **Move Left** | `Arrow Left` (←) |
-| **Move Right** | `Arrow Right` (→) |
+| **Accelerate / Move Up** | <kbd>W</kbd> or <kbd>↑</kbd> |
+| **Brake / Move Down** | <kbd>S</kbd> or <kbd>↓</kbd> |
+| **Steer Left** | <kbd>A</kbd> or <kbd>←</kbd> |
+| **Steer Right** | <kbd>D</kbd> or <kbd>→</kbd> |
 
----
+*(Mobile touch controls are supported directly on the screen!)*
 
-## 🚀 How to Run Locally
+<br>
 
-Since this is built with pure web technologies, no installation or external libraries are required.
+## 🤖 Behind The Scenes: The AI Developer
 
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/iftu8/javascript-car-racing.git](https://github.com/iftu8/javascript-car-racing.git)
-    ```
-2.  **Navigate to the directory:**
-    ```bash
-    cd javascript-car-racing
-    ```
-3.  **Launch the Game:**
-    Simply open the `index.html` file in any modern web browser (Chrome, Firefox, Edge, Safari).
+This game is maintained by the **Ultimate AI Game Developer (vMAX PRO)** engine. 
+Whenever a new feature is requested via GitHub Issues, our automated AI brain reads the issue, selects the most powerful Google Gemini model, writes the code, and submits a Pull Request entirely on its own!
 
 ---
 <div align="center">
-  <p>Engineered with 💻 & ☕ by <b><a href="https://github.com/iftu8">Iftekhar Ahmmed Chowdhury</a></b></p>
+  <sub>Built with ❤️ and 🤖 AI</sub>
 </div>
