@@ -12,7 +12,7 @@ permissions:
 jobs:
   auto-code-generator:
     runs-on: ubuntu-latest
-    timeout-minutes: 30 # বড় আপডেটের জন্য ৩০ মিনিট সময় বরাদ্দ করা হলো
+    timeout-minutes: 30
 
     steps:
       - name: 1. Checkout Repository
@@ -57,7 +57,7 @@ jobs:
               with open(file_path, "r", encoding="utf-8") as f:
                   current_code = f.read()
 
-              # 🚀 PROMPT (Strictly forces AI to output only code)
+              # 🚀 PROMPT
               prompt = f"""You are an elite, senior game developer. Refactor and profoundly upgrade the HTML/JS game based on the GitHub issue below.
               
               Issue Title: {issue_title}
@@ -74,8 +74,8 @@ jobs:
               5. Provide the FULL updated file, do not truncate or leave placeholders.
               """
 
-              # 100% Guaranteed Model Fixed URL (No Auto-Detect Bugs)
-              model_name = "gemini-1.5-flash"
+              # ✅ FIX: Using the EXACT supported model name for v1beta API
+              model_name = "gemini-1.5-flash-latest"
               url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
               
               headers = {"Content-Type": "application/json"}
@@ -90,9 +90,8 @@ jobs:
               max_retries = 3
               
               for attempt in range(1, max_retries + 1):
-                  print(f"⏳ Attempt {attempt}/{max_retries}: Sending massive request to {model_name}... Please wait.")
+                  print(f"⏳ Attempt {attempt}/{max_retries}: Sending request to {model_name}... Please wait.")
                   try:
-                      # ২০ মিনিট পর্যন্ত অপেক্ষা করবে
                       response = requests.post(url, headers=headers, json=payload, timeout=1200)
                       response.raise_for_status()
                       data = response.json()
