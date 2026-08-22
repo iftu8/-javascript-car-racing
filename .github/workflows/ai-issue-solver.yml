@@ -23,8 +23,8 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: 3. Install Requirements
-        run: pip install requests
+      - name: 3. Install Official Google AI SDK
+        run: pip install google-generativeai
 
       - name: 4. Create and Execute AI Brain
         env:
@@ -34,31 +34,30 @@ jobs:
         run: |
           cat << 'EOF' > ai_brain.py
           import os
-          import json
-          import requests
           import sys
           import re
-          import time
+          import google.generativeai as genai
 
           def main():
               api_key = os.environ.get("GEMINI_API_KEY")
               if not api_key:
-                  print("❌ Error: GEMINI_API_KEY is missing in GitHub Secrets!")
+                  print("❌ Error: GEMINI_API_KEY is missing!")
                   sys.exit(1)
+
+              # Using Official Google SDK
+              genai.configure(api_key=api_key)
 
               issue_title = os.environ.get("ISSUE_TITLE", "No Title")
               issue_body = os.environ.get("ISSUE_BODY", "No Body")
               
               file_path = "index.html"
-              if not os.path.exists(file_path):
-                  print(f"❌ Error: {file_path} not found in the repository.")
-                  sys.exit(1)
-                  
-              with open(file_path, "r", encoding="utf-8") as f:
-                  current_code = f.read()
+              
+              current_code = ""
+              if os.path.exists(file_path):
+                  with open(file_path, "r", encoding="utf-8") as f:
+                      current_code = f.read()
 
-              # 🚀 PROMPT
-              prompt = f"""You are an elite, senior game developer. Refactor and profoundly upgrade the HTML/JS game based on the GitHub issue below.
+              prompt = f"""You are an elite expert game developer. Refactor and upgrade the HTML5 Canvas game. Make it ultra-smooth, high-graphics, and highly standard.
               
               Issue Title: {issue_title}
               Issue Description: {issue_body}
@@ -67,58 +66,31 @@ jobs:
               {current_code}
               
               STRICT RULES:
-              1. Return ONLY valid, highly optimized, and bug-free HTML/CSS/JS code. No explanations.
-              2. DO NOT include markdown formatting like ```html or ```.
-              3. The code must start exactly with <!DOCTYPE html> and end with </html>.
-              4. Everything must remain in a single file (`index.html`). Do not use external files.
-              5. Provide the FULL updated file, do not truncate or leave placeholders.
+              1. Provide ONLY valid HTML/CSS/JS code. No explanations.
+              2. Do NOT use external files. Write everything inside a single HTML file.
+              3. DO NOT output markdown blocks like ```html. Start exactly with <!DOCTYPE html> and end with </html>.
+              4. Make the game absolutely perfect, smooth, and high graphics.
               """
 
-              # ✅ FIX: Using the EXACT supported model name for v1beta API
-              model_name = "gemini-1.5-flash-latest"
-              url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-              
-              headers = {"Content-Type": "application/json"}
-              payload = {
-                  "contents": [{"parts": [{"text": prompt}]}],
-                  "generationConfig": {
-                      "temperature": 0.2,
-                      "maxOutputTokens": 8192
-                  }
-              }
+              print("⏳ Sending request using Official Google SDK...")
+              try:
+                  # Exact correct model name for SDK
+                  model = genai.GenerativeModel('gemini-1.5-flash')
+                  response = model.generate_content(prompt)
+                  
+                  new_code = response.text
+                  
+                  # Cleanup any unwanted Markdown tags
+                  new_code = re.sub(r'^```(html|javascript|css)?\s*', '', new_code, flags=re.IGNORECASE)
+                  new_code = re.sub(r'```$', '', new_code.strip())
 
-              max_retries = 3
-              
-              for attempt in range(1, max_retries + 1):
-                  print(f"⏳ Attempt {attempt}/{max_retries}: Sending request to {model_name}... Please wait.")
-                  try:
-                      response = requests.post(url, headers=headers, json=payload, timeout=1200)
-                      response.raise_for_status()
-                      data = response.json()
+                  with open(file_path, "w", encoding="utf-8") as f:
+                      f.write(new_code)
                       
-                      new_code = data["candidates"][0]["content"]["parts"][0]["text"]
-                      
-                      # 🧹 CLEANUP MARKDOWN BUGS
-                      new_code = re.sub(r'^```(html|javascript|css)?\s*', '', new_code, flags=re.IGNORECASE)
-                      new_code = re.sub(r'```$', '', new_code.strip())
-
-                      with open(file_path, "w", encoding="utf-8") as f:
-                          f.write(new_code)
-                          
-                      print("✅ AI successfully engineered and rewrote the massive code!")
-                      sys.exit(0) # Success!
-
-                  except Exception as e:
-                      print(f"❌ Attempt {attempt} Failed: {e}")
-                      if 'response' in locals() and hasattr(response, 'text'):
-                          print(f"API Error Details: {response.text}")
-                      
-                      if attempt < max_retries:
-                          print("🔄 Retrying in 10 seconds...")
-                          time.sleep(10)
-                      else:
-                          print("🚨 All attempts failed. Please check your API Key limit.")
-                          sys.exit(1)
+                  print(f"✅ AI successfully generated the highly upgraded game code in {file_path}!")
+              except Exception as e:
+                  print(f"❌ Error during generation: {e}")
+                  sys.exit(1)
 
           if __name__ == "__main__":
               main()
@@ -129,8 +101,8 @@ jobs:
       - name: 5. Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "feat: Game Engine Update via Gemini 1.5 Flash for #${{ github.event.issue.number }}"
-          title: "🚀 Mega AI Update: ${{ github.event.issue.title }}"
-          body: "This update was successfully generated by **Gemini 1.5 Flash** for Issue #${{ github.event.issue.number }}.\n\nPlease review the changes and merge! 🎮"
-          branch: "ai-update-${{ github.event.issue.number }}"
+          commit-message: "feat: Mega High Graphics Update via Gemini AI"
+          title: "🚀 Ultra Game Update: ${{ github.event.issue.title }}"
+          body: "This powerful update was generated using the Official Gemini SDK."
+          branch: "ultra-update-${{ github.event.issue.number }}"
           delete-branch: true
