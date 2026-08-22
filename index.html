@@ -1,340 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Speed Racer - Ultimate 2D Racing</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap');
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Orbitron', sans-serif;
-            user-select: none;
-        }
-
-        body {
-            background: #050505;
-            color: #fff;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        /* 🎛️ Dashboard HUD */
-        .hud {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            z-index: 100;
-        }
-
-        .panel {
-            background: rgba(10, 10, 15, 0.85);
-            padding: 15px 25px;
-            border-radius: 8px;
-            border: 2px solid #00FF41;
-            box-shadow: 0 0 15px rgba(0, 255, 65, 0.4);
-            font-size: 20px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .panel span {
-            font-weight: 900;
-            color: #00FF41;
-            text-shadow: 0 0 10px #00FF41;
-        }
-
-        .panel.speed { border-color: #00e5ff; box-shadow: 0 0 15px rgba(0, 229, 255, 0.4); }
-        .panel.speed span { color: #00e5ff; text-shadow: 0 0 10px #00e5ff; }
-
-        .panel.high-score { border-color: #ff0055; box-shadow: 0 0 15px rgba(255, 0, 85, 0.4); }
-        .panel.high-score span { color: #ff0055; text-shadow: 0 0 10px #ff0055; }
-
-        /* 🏁 Game UI */
-        .game-container {
-            width: 450px;
-            height: 100vh;
-            background: #111;
-            position: relative;
-            border-left: 4px solid #00FF41;
-            border-right: 4px solid #00FF41;
-            box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
-            overflow: hidden;
-        }
-
-        .start-screen {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 200;
-            cursor: pointer;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .start-screen h1 {
-            color: #E0115F;
-            font-size: 38px;
-            margin-bottom: 20px;
-            text-shadow: 0 0 20px #E0115F;
-        }
-
-        .start-screen p {
-            font-size: 18px;
-            color: #aaa;
-            margin-bottom: 10px;
-            font-family: Arial, sans-serif;
-            letter-spacing: 1px;
-        }
-
-        .btn-start {
-            margin-top: 30px;
-            padding: 15px 40px;
-            background: transparent;
-            color: #00FF41;
-            border: 2px solid #00FF41;
-            font-size: 22px;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
-            transition: all 0.3s ease;
-        }
-
-        .btn-start:hover {
-            background: #00FF41;
-            color: #000;
-            box-shadow: 0 0 30px #00FF41;
-        }
-
-        /* 🛣️ Road Design */
-        .road-line {
-            width: 8px;
-            height: 120px;
-            background: rgba(255, 255, 255, 0.7);
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            box-shadow: 0 0 10px white;
-        }
-
-        /* 🏎️ Car Models */
-        .car {
-            width: 50px;
-            height: 100px;
-            position: absolute;
-            border-radius: 8px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.6);
-        }
-
-        .player-car {
-            background: linear-gradient(to bottom, #00d2ff, #3a7bd5);
-            bottom: 30px;
-            left: 200px;
-            border: 2px solid #00d2ff;
-            box-shadow: 0 0 20px rgba(0, 210, 255, 0.6);
-        }
-
-        /* Headlights */
-        .player-car::before, .player-car::after {
-            content: '';
-            position: absolute;
-            top: -15px;
-            width: 12px;
-            height: 25px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 50%;
-            box-shadow: 0 -20px 40px 15px rgba(255, 255, 255, 0.8);
-        }
-        .player-car::before { left: 4px; }
-        .player-car::after { right: 4px; }
-
-        .enemy-car {
-            background: linear-gradient(to bottom, #ff416c, #ff4b2b);
-            border: 2px solid #ff416c;
-            box-shadow: 0 0 20px rgba(255, 65, 108, 0.6);
-        }
-    </style>
-</head>
-<body>
-
-    <!-- Heads Up Display -->
-    <div class="hud">
-        <div class="panel score">Score: <span id="scoreVal">0</span></div>
-        <div class="panel high-score">Best: <span id="highScoreVal">0</span></div>
-        <div class="panel speed"><span id="speedVal">0</span> KM/H</div>
-    </div>
-
-    <!-- Game Engine -->
-    <div class="game-container" id="gameArea"></div>
-
-    <!-- Start / Game Over Screen -->
-    <div class="start-screen" id="startScreen">
-        <h1>NEON RACER</h1>
-        <p>Use [ARROW KEYS] to Drive</p>
-        <p>Dodge the traffic. Survive.</p>
-        <button class="btn-start">INITIALIZE ENGINE</button>
-    </div>
-
-    <script>
-        const scoreVal = document.getElementById('scoreVal');
-        const speedVal = document.getElementById('speedVal');
-        const highScoreVal = document.getElementById('highScoreVal');
-        const startScreen = document.getElementById('startScreen');
-        const gameArea = document.getElementById('gameArea');
-
-        // Load High Score from Browser LocalStorage
-        let storedHighScore = localStorage.getItem('neonRacerHighScore') || 0;
-        highScoreVal.innerText = storedHighScore;
-
-        let player = { speed: 6, score: 0, isActive: false };
-        let keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
-
-        // Key Controls
-        document.addEventListener('keydown', (e) => { if(keys.hasOwnProperty(e.key)) keys[e.key] = true; });
-        document.addEventListener('keyup', (e) => { if(keys.hasOwnProperty(e.key)) keys[e.key] = false; });
-        startScreen.addEventListener('click', startEngine);
-
-        // Bounding Box Collision Engine
-        function checkCollision(playerCar, enemyCar) {
-            let pRect = playerCar.getBoundingClientRect();
-            let eRect = enemyCar.getBoundingClientRect();
-            
-            // Adjust hitboxes slightly for fair gameplay (margin of error)
-            return !((pRect.bottom - 10 < eRect.top) || 
-                     (pRect.top + 10 > eRect.bottom) || 
-                     (pRect.right - 10 < eRect.left) || 
-                     (pRect.left + 10 > eRect.right));
-        }
-
-        // Render & Move Road Lines
-        function renderRoad() {
-            let lines = document.querySelectorAll('.road-line');
-            lines.forEach(line => {
-                if(line.y >= window.innerHeight) line.y -= window.innerHeight + 120;
-                line.y += player.speed;
-                line.style.top = line.y + "px";
-            });
-        }
-
-        // Render Enemy Traffic
-        function renderTraffic(playerCar) {
-            let enemies = document.querySelectorAll('.enemy-car');
-            enemies.forEach(enemy => {
-                if(checkCollision(playerCar, enemy)) triggerCrash();
-
-                if(enemy.y >= window.innerHeight) {
-                    enemy.y = -300;
-                    enemy.style.left = Math.floor(Math.random() * 380) + "px"; // Spawn logic
+like pattern
+                    for (let c = 1; c < cols - 1; c++) {
+                        if (Math.cos(i * r + c) > 0) {
+                            ctx.fillRect(x + c * 10, y + r * 15, 4, 6);
+                        }
+                    }
                 }
-                enemy.y += player.speed;
-                enemy.style.top = enemy.y + "px";
-            });
-        }
-
-        // Main Game Loop (60 FPS)
-        function gameLoop() {
-            let car = document.querySelector('.player-car');
-            let roadData = gameArea.getBoundingClientRect();
-
-            if (player.isActive) {
-                renderRoad();
-                renderTraffic(car);
-
-                // Fluid Movement Physics
-                if (keys.ArrowUp && player.y > (roadData.top + 50)) player.y -= player.speed;
-                if (keys.ArrowDown && player.y < (roadData.bottom - 120)) player.y += player.speed;
-                if (keys.ArrowLeft && player.x > 5) player.x -= player.speed;
-                if (keys.ArrowRight && player.x < (roadData.width - 60)) player.x += player.speed;
-
-                car.style.top = player.y + "px";
-                car.style.left = player.x + "px";
-
-                window.requestAnimationFrame(gameLoop);
-                
-                // Score & Difficulty Progression System
-                player.score++;
-                scoreVal.innerText = player.score;
-                
-                if(player.score % 500 === 0 && player.speed < 20) {
-                    player.speed += 1; // Increase difficulty
-                }
-
-                // Update Speedometer UI
-                let displaySpeed = Math.floor(player.speed * 12.5);
-                speedVal.innerText = displaySpeed;
             }
         }
+    }
+    ctx.restore();
+}
+```
+This is absolutely gorgeous! It creates a layered, parallax-scrolling cyberpunk city with glowing neon windows and antennas.
 
-        // Initialize Game
-        function startEngine() {
-            startScreen.style.display = "none";
-            gameArea.innerHTML = "";
+Let's add the Sprites / Obstacles / Traffic:
+We need to place sprites along the road.
+What kind of sprites?
+- Enemy cars
+- Roadblocks / Neon barriers
+- Cyberpunk roadside decorations (neon trees, billboards, glowing pillars)
 
-            player.isActive = true;
-            player.score = 0;
-            player.speed = 6;
-            
-            // Build Road Dynamics
-            for(let i=0; i<6; i++) {
-                let roadLine = document.createElement('div');
-                roadLine.setAttribute('class', 'road-line');
-                roadLine.y = (i * 150);
-                roadLine.style.top = roadLine.y + "px";
-                gameArea.appendChild(roadLine);
-            }
-
-            // Spawn Player Car
-            let playerCar = document.createElement('div');
-            playerCar.setAttribute('class', 'car player-car');
-            gameArea.appendChild(playerCar);
-            player.x = playerCar.offsetLeft;
-            player.y = playerCar.offsetTop;
-
-            // Spawn Traffic
-            for(let i=0; i<3; i++) {
-                let enemy = document.createElement('div');
-                enemy.setAttribute('class', 'car enemy-car');
-                enemy.y = ((i + 1) * 350) * -1;
-                enemy.style.top = enemy.y + "px";
-                enemy.style.left = Math.floor(Math.random() * 380) + "px";
-                gameArea.appendChild(enemy);
-            }
-
-            window.requestAnimationFrame(gameLoop);
-        }
-
-        // Handle Game Over
-        function triggerCrash() {
-            player.isActive = false;
-            
-            // Save High Score
-            if(player.score > storedHighScore) {
-                storedHighScore = player.score;
-                localStorage.setItem('neonRacerHighScore', storedHighScore);
-                highScoreVal.innerText = storedHighScore;
-            }
-
-            startScreen.style.display = "flex";
-            startScreen.innerHTML = `
-                <h1 style="color: #ff0055; text-shadow: 0 0 20px #ff0055;">SYSTEM FAILURE</h1>
-                <p style="color: #fff; font-size: 24px; margin-bottom: 5px;">Final Score: <span style="color: #00FF41;">${player.score}</span></p>
-                <p style="color: #aaa; margin-bottom: 25px;">Top Speed Reached: ${Math.floor(player.speed * 12.5)} KM/H</p>
-                <button class="btn-start" style="border-color: #ff0055; color: #ff0055; box-shadow: 0 0 15px rgba(255, 0, 85, 0.5);">REBOOT SYSTEM</button>
-            `;
-        }
-    </script>
-</body>
-</html>
+Let's define a sprite structure:
+```javascript
+let sprites = [];
+```
+Wait, we can attach sprites directly to segments! This is the standard Outrun way and makes rendering extremely easy and fast.
+```javascript
+// In segment generation:
+// segment.sprites = []
+```
+Let's write a function to place sprites:
+```javascript
+function resetSprites() {
+    // Clear all sprites from segments
+    for (let i = 0; i < segments.length; i++) {
+        segments[i].sprites = [];
+    }
+    
+    // Place roadside decorations (billboards, neon trees, pillars)
+    for (let i = 10; i
