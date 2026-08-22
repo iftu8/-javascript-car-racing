@@ -1,41 +1,135 @@
-like pattern
-                    for (let c = 1; c < cols - 1; c++) {
-                        if (Math.cos(i * r + c) > 0) {
-                            ctx.fillRect(x + c * 10, y + r * 15, 4, 6);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    ctx.restore();
-}
-```
-This is absolutely gorgeous! It creates a layered, parallax-scrolling cyberpunk city with glowing neon windows and antennas.
+Elite, senior game developer.
+Refactor, upgrade, and add features to an existing (though partially provided) HTML5 racing game to make it a "AAA Pro-Level Cyberpunk 3D Racing Experience".
 
-Let's add the Sprites / Obstacles / Traffic:
-We need to place sprites along the road.
-What kind of sprites?
-- Enemy cars
-- Roadblocks / Neon barriers
-- Cyberpunk roadside decorations (neon trees, billboards, glowing pillars)
+        *   Graphics: High-res, dynamic neon lighting, motion blur, shadows.
+        *   UI: Tailwind CSS, futuristic HUD (Speedometer, Health, Mini-map), Main Menus.
+        *   Physics: Hyper-car handling, drifting, smooth acceleration/braking.
+        *   Particles: Sparks, exhaust, smoke, neon rain.
+        *   Backend: Ruby scaffold (simulated/structure within the single file context as requested, though actual Ruby won't run in a browser, I'll provide the logic/API structure concept or a mock). *Correction*: The prompt asks for a single file `index.html`. I cannot run a Ruby backend in a single HTML file. I will implement a "Mock Backend" that simulates the Ruby API calls to satisfy the architectural requirement within the constraints.
+        *   Optimization: 60+ FPS, modular JS.
+        *   New Features: Sprites (enemy cars, roadblocks, decorations) attached to segments.
 
-Let's define a sprite structure:
-```javascript
-let sprites = [];
-```
-Wait, we can attach sprites directly to segments! This is the standard Outrun way and makes rendering extremely easy and fast.
-```javascript
-// In segment generation:
-// segment.sprites = []
-```
-Let's write a function to place sprites:
-```javascript
-function resetSprites() {
-    // Clear all sprites from segments
-    for (let i = 0; i < segments.length; i++) {
-        segments[i].sprites = [];
-    }
-    
-    // Place roadside decorations (billboards, neon trees, pillars)
-    for (let i = 10; i
+        *   Single file `index.html`.
+        *   No explanations.
+        *   No markdown blocks (Wait, the prompt says "DO NOT output ```html markdown blocks" but also "Return ONLY valid... code". Usually, this means the user wants the raw code to save directly. However, if I don't use markdown, the LLM output might be messy. But the instruction is explicit: "DO NOT output ```html markdown blocks". I will follow the instruction literally).
+        *   Start with `<!DOCTYPE html>` and end with `</html>`.
+
+    *   *Engine Style*: Pseudo-3D (Outrun-style) is the most efficient for a single-file HTML5 canvas game. It uses segments, projection, and parallax.
+    *   *Graphics*: Use `requestAnimationFrame`. Implement a "Post-processing" pass using a second canvas or global composite operations for bloom/glow and motion blur.
+    *   *Physics*: Use a state-based approach (acceleration, friction, centrifugal force).
+    *   *UI*: Tailwind CSS via CDN.
+    *   *Particles*: A simple particle class with life, velocity, and color.
+    *   *Sprites*: Objects attached to segments with `z` position.
+
+    *   *HTML Structure*:
+        *   `<head>`: Tailwind CDN, Google Fonts (Orbitron for cyberpunk feel).
+        *   `<body>`:
+            *   `<canvas>` for the game.
+            *   `<div id="ui">` for HUD (Tailwind).
+            *   `<div id="menu">` for Main Menu (Tailwind).
+            *   `<div id="game-over">` for Game Over.
+
+    *   *JavaScript Modules (Internal)*:
+        *   `Config`: Constants (colors, physics, speeds).
+        *   `Input`: Keyboard/Touch handling.
+        *   `MathUtils`: Projection, interpolation.
+        *   `ParticleSystem`: Managing sparks/smoke.
+        *   `Renderer`: The core loop, drawing segments, sprites, and the player.
+        *   `GameEngine`: State management (Menu, Playing, GameOver).
+        *   `Physics`: Car movement logic.
+
+    *   *Physics Details*:
+        *   `player.speed`, `player.x`, `player.y`, `player.drift`.
+        *   `road.curve`, `road.hill`.
+        *   Centrifugal force: `player.x -= (curve * speed * factor)`.
+
+    *   *Graphics Details*:
+        *   Neon Glow: `ctx.shadowBlur` and `ctx.shadowColor` (expensive, use sparingly) or layered semi-transparent strokes.
+        *   Motion Blur: Don't clear the canvas fully every frame, or draw a semi-transparent rectangle over the previous frame. Actually, for a racing game, a "trailing" effect on sprites works better.
+        *   Rain: Particles moving vertically with a slight tilt.
+
+    *   *UI Details*:
+        *   Speedometer: Circular or bar-based with neon glow.
+        *   Health: Segmented bar.
+        *   Mini-map: A simplified line representing the track.
+
+    *   *The "Ruby" Backend Requirement*:
+        *   Since I can't provide a real Ruby server in a single HTML file, I will implement a `LeaderboardService` class that uses `fetch` to a hypothetical `/api/scores` endpoint, and provide a comment block showing what the Ruby/Sinatra controller would look like.
+
+    *   *Segment Generation*:
+        *   Create a loop to generate segments with varying curves and hills.
+        *   Attach `sprites` (rectangles/shapes for now, as I can't include external image assets easily without base64, which would bloat the file too much. I'll use procedural drawing for "sprites" to ensure it works immediately).
+
+    *   *Refining the "Outrun" Math*:
+        *   `project(p, cameraX, cameraY, cameraZ, width, height)`
+        *   `segment.screenX = (p.x - cameraX) * scale + width/2`
+        *   `segment.screenY = (p.y - cameraY) * scale + height/2`
+        *   `segment.scale = scale / (p.z - cameraZ)`
+
+    *   *Adding Particles*:
+        *   `class Particle { x, y, vx, vy, life, color }`
+        *   `update()` and `draw()`.
+
+    *   *Adding Sprites*:
+        *   `class Sprite { x, y, z, type, scale }`
+        *   Types: `ENEMY`, `BARRIER`, `DECOR`.
+
+    *   *Tailwind HUD*:
+        *   `fixed top-0 left-0 w-full h-full pointer-events-none`
+        *   Speedometer: `bottom-10 right-10 text-cyan-400 font-bold text-4xl`.
+
+    *   *Performance*:
+        *   Use a single `requestAnimationFrame`.
+        *   Minimize `ctx.save()`/`ctx.restore()` calls.
+        *   Pre-calculate constants.
+
+    *   *Self-Correction during drafting*:
+        *   *Issue*: Using `shadowBlur` for every neon line will kill FPS.
+        *   *Fix*: Use `globalCompositeOperation = 'lighter'` for additive blending to simulate glow without the heavy shadow calculation.
+        *   *Issue*: Sprites need to be drawn in order of depth.
+        *   *Fix*: Sort segments and sprites by `z` before drawing.
+
+    *   *Final Polish*:
+        *   Add "Neon Rain" effect.
+        *   Add "Drift" mechanic: when turning hard at high speed, the car angle changes.
+        *   Add "Collision" logic: if `player.x` is too far from road center and `speed` is high, or if `player.x` hits a sprite.
+
+    *   *Wait, the prompt says "DO NOT output ```html markdown blocks"*. This is a very specific instruction. I will provide the raw text starting with `<!DOCTYPE html>`.
+
+    *   *Wait, the prompt says "Return ONLY valid, optimized HTML/CSS/JS code"*.
+    *   *Wait, the prompt says "Start exactly with <!DOCTYPE html> and end with </html>"*.
+
+    *   *Implementation Plan for Sprites*:
+        *   Instead of external images, I will use `drawSprite(ctx, type, x, y, scale)` which uses `ctx.fillRect` and `ctx.arc` to create neon-styled shapes (enemy cars = glowing rectangles, barriers = glowing cylinders). This ensures the code is self-contained and "AAA" looking via procedural art.
+
+    *   *Physics Logic*:
+        *   `acceleration`: increases `speed`.
+        *   `friction`: decreases `speed`.
+        *   `centrifugal`: `player.x -= (segment.curve * player.speed * 0.02)`.
+        *   `drift`: If `Math.abs(input.left/right) > 0.5` and `speed > threshold`, increase `player.driftAngle`.
+
+    *   *UI (Tailwind)*:
+        *   Main Menu: Overlay with `bg-black/80`, `backdrop-blur-md`.
+        *   HUD: `text-cyan-400`, `text-pink-500` (Cyberpunk palette).
+
+    *   *Backend (Ruby Mock)*:
+        *   `const API_URL = '/api/leaderboard';`
+        *   `async function submitScore(score) { ... }`
+
+    *   *Final Code Structure*:
+        1.  `<!DOCTYPE html>`
+        2.  `<head>` (Tailwind, Fonts, Styles)
+        3.  `<body>` (Canvas, UI Layers)
+        4.  `<script>`
+            *   `Constants`
+            *   `Math/Physics Utils`
+            *   `Classes (Particle, Sprite, Segment, Player, Game)`
+            *   `Engine Loop`
+            *   `Input Handling`
+
+    *   *Graphics Engine Detail*:
+        *   Road: Alternating colors for segments to create a sense of movement.
+        *   Sky: Gradient with moving stars/neon clouds.
+        *   Motion Blur: `ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; ctx.fillRect(0,0,w,h);` (This creates a trail effect).
+
+    *   *Let's write the code.*
