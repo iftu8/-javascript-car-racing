@@ -44,12 +44,37 @@ jobs:
                   print("❌ Error: GEMINI_API_KEY is missing!")
                   sys.exit(1)
 
-              # Using Official Google SDK
               genai.configure(api_key=api_key)
+
+              print("🔍 Scanning your API Key for available models...")
+              available_models = []
+              try:
+                  for m in genai.list_models():
+                      if 'generateContent' in m.supported_generation_methods:
+                          available_models.append(m.name)
+              except Exception as e:
+                  print(f"❌ Failed to list models: {e}")
+                  sys.exit(1)
+              
+              if not available_models:
+                  print("❌ Error: Your API key does not have access to any content generation models.")
+                  sys.exit(1)
+                  
+              # 🎯 Auto-detect the best model
+              selected_model = available_models[0]
+              for m in available_models:
+                  if '1.5-flash' in m:
+                      selected_model = m
+                      break
+                  elif '1.5-pro' in m:
+                      selected_model = m
+                  elif '1.0-pro' in m and '1.5' not in selected_model:
+                      selected_model = m
+
+              print(f"🎯 Perfectly Selected Model: {selected_model}")
 
               issue_title = os.environ.get("ISSUE_TITLE", "No Title")
               issue_body = os.environ.get("ISSUE_BODY", "No Body")
-              
               file_path = "index.html"
               
               current_code = ""
@@ -69,25 +94,24 @@ jobs:
               1. Provide ONLY valid HTML/CSS/JS code. No explanations.
               2. Do NOT use external files. Write everything inside a single HTML file.
               3. DO NOT output markdown blocks like ```html. Start exactly with <!DOCTYPE html> and end with </html>.
-              4. Make the game absolutely perfect, smooth, and high graphics.
               """
 
-              print("⏳ Sending request using Official Google SDK...")
+              print(f"⏳ Sending request to {selected_model}... This might take a few minutes.")
               try:
-                  # Exact correct model name for SDK
-                  model = genai.GenerativeModel('gemini-1.5-flash')
+                  # Use the exact model name fetched from Google's servers
+                  clean_model_name = selected_model.replace('models/', '')
+                  model = genai.GenerativeModel(clean_model_name)
                   response = model.generate_content(prompt)
                   
                   new_code = response.text
                   
-                  # Cleanup any unwanted Markdown tags
                   new_code = re.sub(r'^```(html|javascript|css)?\s*', '', new_code, flags=re.IGNORECASE)
                   new_code = re.sub(r'```$', '', new_code.strip())
 
                   with open(file_path, "w", encoding="utf-8") as f:
                       f.write(new_code)
                       
-                  print(f"✅ AI successfully generated the highly upgraded game code in {file_path}!")
+                  print(f"✅ AI successfully engineered the game using {clean_model_name}!")
               except Exception as e:
                   print(f"❌ Error during generation: {e}")
                   sys.exit(1)
@@ -101,8 +125,8 @@ jobs:
       - name: 5. Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "feat: Mega High Graphics Update via Gemini AI"
+          commit-message: "feat: Extended Ultra AI Update"
           title: "🚀 Ultra Game Update: ${{ github.event.issue.title }}"
-          body: "This powerful update was generated using the Official Gemini SDK."
+          body: "This update was perfectly generated using dynamic model selection."
           branch: "ultra-update-${{ github.event.issue.number }}"
           delete-branch: true
