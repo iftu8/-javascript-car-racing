@@ -12,7 +12,7 @@ permissions:
 jobs:
   auto-code-generator:
     runs-on: ubuntu-latest
-    timeout-minutes: 30 # ৩০ মিনিট পর্যন্ত সময় দেওয়া হলো, যেন কোড অর্ধেক লিখে গিটহাব বন্ধ না করে দেয়!
+    timeout-minutes: 30 # বড় আপডেটের জন্য ৩০ মিনিট সময় বরাদ্দ করা হলো
 
     steps:
       - name: 1. Checkout Repository
@@ -26,7 +26,7 @@ jobs:
       - name: 3. Install Requirements
         run: pip install requests
 
-      - name: 4. Create and Execute AI Brain (Python Script)
+      - name: 4. Create and Execute AI Brain
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
@@ -38,11 +38,12 @@ jobs:
           import requests
           import sys
           import re
+          import time
 
           def main():
               api_key = os.environ.get("GEMINI_API_KEY")
               if not api_key:
-                  print("❌ Error: GEMINI_API_KEY is missing!")
+                  print("❌ Error: GEMINI_API_KEY is missing in GitHub Secrets!")
                   sys.exit(1)
 
               issue_title = os.environ.get("ISSUE_TITLE", "No Title")
@@ -50,34 +51,13 @@ jobs:
               
               file_path = "index.html"
               if not os.path.exists(file_path):
-                  print(f"❌ Error: {file_path} not found.")
+                  print(f"❌ Error: {file_path} not found in the repository.")
                   sys.exit(1)
                   
               with open(file_path, "r", encoding="utf-8") as f:
                   current_code = f.read()
 
-              # 🚀 SMART AUTO-DETECT: এটি নিজে থেকে সবচেয়ে বেস্ট মডেলটি খুঁজে নেবে! (No more 404 Errors)
-              print("🔍 Scanning for available Gemini models...")
-              models_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
-              try:
-                  models_req = requests.get(models_url)
-                  models_req.raise_for_status()
-                  available_models = [m['name'].replace('models/', '') for m in models_req.json().get('models', [])]
-              except Exception as e:
-                  print("⚠️ Could not fetch models list. Using default stable model.")
-                  available_models = ["gemini-1.5-flash-latest"]
-
-              selected_model = "gemini-pro" # Fallback
-              priority_list = ["gemini-1.5-pro-latest", "gemini-1.5-flash-latest", "gemini-1.5-pro", "gemini-1.5-flash"]
-              
-              for p in priority_list:
-                  if p in available_models:
-                      selected_model = p
-                      break
-              
-              print(f"🎯 Successfully Selected Model: {selected_model}")
-
-              # 🚀 PROMPT
+              # 🚀 PROMPT (Strictly forces AI to output only code)
               prompt = f"""You are an elite, senior game developer. Refactor and profoundly upgrade the HTML/JS game based on the GitHub issue below.
               
               Issue Title: {issue_title}
@@ -94,7 +74,9 @@ jobs:
               5. Provide the FULL updated file, do not truncate or leave placeholders.
               """
 
-              url = f"https://generativelanguage.googleapis.com/v1beta/models/{selected_model}:generateContent?key={api_key}"
+              # 100% Guaranteed Model Fixed URL (No Auto-Detect Bugs)
+              model_name = "gemini-1.5-flash"
+              url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
               
               headers = {"Content-Type": "application/json"}
               payload = {
@@ -105,33 +87,39 @@ jobs:
                   }
               }
 
-              print(f"⏳ Sending massive request to {selected_model}... This might take 10-20 minutes. Please wait.")
-              try:
-                  # ২০ মিনিট (1200 seconds) পর্যন্ত API রেসপন্সের জন্য অপেক্ষা করবে
-                  response = requests.post(url, headers=headers, json=payload, timeout=1200)
-                  response.raise_for_status()
-              except Exception as e:
-                  print(f"❌ API Request Failed: {e}")
-                  if hasattr(response, 'text'):
-                      print(f"API Error Details: {response.text}")
-                  sys.exit(1)
+              max_retries = 3
+              
+              for attempt in range(1, max_retries + 1):
+                  print(f"⏳ Attempt {attempt}/{max_retries}: Sending massive request to {model_name}... Please wait.")
+                  try:
+                      # ২০ মিনিট পর্যন্ত অপেক্ষা করবে
+                      response = requests.post(url, headers=headers, json=payload, timeout=1200)
+                      response.raise_for_status()
+                      data = response.json()
+                      
+                      new_code = data["candidates"][0]["content"]["parts"][0]["text"]
+                      
+                      # 🧹 CLEANUP MARKDOWN BUGS
+                      new_code = re.sub(r'^```(html|javascript|css)?\s*', '', new_code, flags=re.IGNORECASE)
+                      new_code = re.sub(r'```$', '', new_code.strip())
 
-              data = response.json()
-              try:
-                  new_code = data["candidates"][0]["content"]["parts"][0]["text"]
-              except (KeyError, IndexError) as e:
-                  print(f"❌ Failed to parse Gemini response. API might have blocked the request.")
-                  print(json.dumps(data, indent=2))
-                  sys.exit(1)
+                      with open(file_path, "w", encoding="utf-8") as f:
+                          f.write(new_code)
+                          
+                      print("✅ AI successfully engineered and rewrote the massive code!")
+                      sys.exit(0) # Success!
 
-              # 🧹 CLEANUP MARKDOWN BUGS
-              new_code = re.sub(r'^```(html|javascript|css)?\s*', '', new_code, flags=re.IGNORECASE)
-              new_code = re.sub(r'```$', '', new_code.strip())
-
-              with open(file_path, "w", encoding="utf-8") as f:
-                  f.write(new_code)
-                  
-              print("✅ AI successfully engineered and rewrote the massive code!")
+                  except Exception as e:
+                      print(f"❌ Attempt {attempt} Failed: {e}")
+                      if 'response' in locals() and hasattr(response, 'text'):
+                          print(f"API Error Details: {response.text}")
+                      
+                      if attempt < max_retries:
+                          print("🔄 Retrying in 10 seconds...")
+                          time.sleep(10)
+                      else:
+                          print("🚨 All attempts failed. Please check your API Key limit.")
+                          sys.exit(1)
 
           if __name__ == "__main__":
               main()
@@ -142,8 +130,8 @@ jobs:
       - name: 5. Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "feat: The Ultimate AI Game Update for #${{ github.event.issue.number }}"
-          title: "🚀 Massive AI Update: ${{ github.event.issue.title }}"
-          body: "This massive code upgrade was successfully engineered by the **Smart AI Engine** for Issue #${{ github.event.issue.number }}.\n\nPlease review the changes and merge! 🎮"
-          branch: "ai-massive-update-${{ github.event.issue.number }}"
+          commit-message: "feat: Game Engine Update via Gemini 1.5 Flash for #${{ github.event.issue.number }}"
+          title: "🚀 Mega AI Update: ${{ github.event.issue.title }}"
+          body: "This update was successfully generated by **Gemini 1.5 Flash** for Issue #${{ github.event.issue.number }}.\n\nPlease review the changes and merge! 🎮"
+          branch: "ai-update-${{ github.event.issue.number }}"
           delete-branch: true
