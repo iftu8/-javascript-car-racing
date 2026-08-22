@@ -1,117 +1,128 @@
-name: Auto AI Issue Resolver
+name: Ultimate Mastermind AI Coder
 
 on:
   issues:
     types: [opened, edited]
 
-# পারমিশনগুলো অত্যন্ত জরুরি, নাহলে PR তৈরি হবে না
 permissions:
   contents: write
   pull-requests: write
   issues: write
 
 jobs:
-  ai-solve:
+  auto-code-generator:
     runs-on: ubuntu-latest
+    timeout-minutes: 20 # গিটহাবকে বলে দেওয়া হলো যে এআই-এর কোড লিখতে অনেক সময় লাগতে পারে, তাই যেন এটি বন্ধ না করে দেয়।
+
     steps:
       - name: 1. Checkout Repository
         uses: actions/checkout@v4
 
-      - name: 2. Setup Node.js Environment
-        uses: actions/setup-node@v4
+      - name: 2. Set up Python Environment
+        uses: actions/setup-python@v5
         with:
-          node-version: '20'
+          python-version: '3.10'
 
-      - name: 3. Create Bulletproof AI Script
-        run: |
-          cat << 'EOF' > ai_script.js
-          const fs = require('fs');
+      - name: 3. Install Requirements
+        run: pip install requests
 
-          async function main() {
-            try {
-              const apiKey = process.env.GEMINI_API_KEY;
-              const issueTitle = process.env.ISSUE_TITLE;
-              const issueBody = process.env.ISSUE_BODY;
-              
-              if (!apiKey) {
-                console.error("❌ Error: GEMINI_API_KEY is missing in Secrets!");
-                process.exit(1);
-              }
-
-              // Read the current game code to provide context to Gemini
-              let currentCode = "";
-              if (fs.existsSync('index.html')) {
-                currentCode = fs.readFileSync('index.html', 'utf8');
-              } else {
-                console.error("❌ Error: index.html not found in repository.");
-                process.exit(1);
-              }
-
-              // The Mastermind Prompt for Gemini 1.5 Pro
-              const promptText = `You are a Senior Web Game Developer. 
-              Update the following HTML5/JS game based on this GitHub issue request.
-              
-              Issue Title: ${issueTitle}
-              Issue Details: ${issueBody}
-              
-              Current Game Code:
-              ${currentCode}
-              
-              IMPORTANT INSTRUCTIONS:
-              1. Implement the requested features flawlessly.
-              2. Provide ONLY the complete updated source code.
-              3. Do NOT wrap the code in markdown blocks (e.g., no \`\`\`html or \`\`\`).
-              4. The response must start exactly with <!DOCTYPE html> and end with </html>.
-              5. Keep all CSS, JS, and HTML strictly inside this single file.`;
-
-              console.log("🚀 Sending request to Gemini 1.5 Pro API...");
-
-              const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  contents: [{ parts: [{ text: promptText }] }],
-                  generationConfig: { temperature: 0.2 } // Low temp for more accurate coding
-                })
-              });
-
-              if (!response.ok) {
-                const errorText = await response.text();
-                console.error("❌ API Call Failed:", errorText);
-                process.exit(1);
-              }
-
-              const data = await response.json();
-              let newCode = data.candidates[0].content.parts[0].text;
-              
-              // Fallback Regex to strictly clean any markdown AI might accidentally generate
-              newCode = newCode.replace(/^```html/i, '').replace(/^```/i, '').replace(/```$/i, '').trim();
-              
-              // Save the updated code
-              fs.writeFileSync('index.html', newCode);
-              console.log("✅ File index.html successfully updated by Gemini!");
-              
-            } catch (error) {
-              console.error("❌ Script Fatal Error:", error);
-              process.exit(1);
-            }
-          }
-
-          main();
-          EOF
-
-      - name: 4. Execute AI Magic (Call Gemini API)
+      - name: 4. Create and Execute AI Brain (Python Script)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
-        run: node ai_script.js
+        run: |
+          cat << 'EOF' > ai_brain.py
+          import os
+          import json
+          import requests
+          import sys
+          import re
 
-      - name: 5. Create Auto Pull Request
+          def main():
+              api_key = os.environ.get("GEMINI_API_KEY")
+              if not api_key:
+                  print("❌ Error: GEMINI_API_KEY secret is missing!")
+                  sys.exit(1)
+
+              issue_title = os.environ.get("ISSUE_TITLE", "No Title")
+              issue_body = os.environ.get("ISSUE_BODY", "No Body")
+              
+              file_path = "index.html"
+              if not os.path.exists(file_path):
+                  print(f"❌ Error: {file_path} not found.")
+                  sys.exit(1)
+                  
+              with open(file_path, "r", encoding="utf-8") as f:
+                  current_code = f.read()
+
+              # Master Prompt for generating massive codebases without breaking
+              prompt = f"""You are an elite, senior game developer. Refactor and profoundly upgrade the HTML/JS game based on the GitHub issue below.
+              
+              Issue Title: {issue_title}
+              Issue Description: {issue_body}
+              
+              Current Code:
+              {current_code}
+              
+              STRICT RULES:
+              1. You must return ONLY valid, highly optimized, and bug-free HTML/CSS/JS code. No explanations.
+              2. DO NOT include markdown formatting like ```html or ```.
+              3. The code must start exactly with <!DOCTYPE html> and end with </html>.
+              4. Everything must remain in a single file. Do not use external files.
+              5. Ensure 100% complete code (do not truncate or omit anything). Provide the FULL updated file.
+              """
+
+              url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key={api_key}"
+              
+              headers = {"Content-Type": "application/json"}
+              payload = {
+                  "contents": [{"parts": [{"text": prompt}]}],
+                  "generationConfig": {
+                      "temperature": 0.2,
+                      "maxOutputTokens": 8192 # ম্যাক্সিমাম পাওয়ার দেওয়া হয়েছে যেন বড় কোড কাট না হয়ে যায়
+                  }
+              }
+
+              print("🚀 Sending massive request to Gemini 1.5 Pro AI...")
+              try:
+                  # ৫ মিনিট পর্যন্ত অপেক্ষা করবে এআই এর কোড জেনারেট হওয়ার জন্য
+                  response = requests.post(url, headers=headers, json=payload, timeout=300)
+                  response.raise_for_status()
+              except Exception as e:
+                  print(f"❌ API Request Failed: {e}")
+                  if hasattr(response, 'text'):
+                      print(f"API Error Details: {response.text}")
+                  sys.exit(1)
+
+              data = response.json()
+              try:
+                  new_code = data["candidates"][0]["content"]["parts"][0]["text"]
+              except (KeyError, IndexError) as e:
+                  print(f"❌ Failed to parse Gemini response: {e}")
+                  print(json.dumps(data, indent=2))
+                  sys.exit(1)
+
+              # Ultimate Markdown Cleanup Regex (কোনোভাবেই যেন কোডে এরর না আসে)
+              new_code = re.sub(r'^```(html|javascript|css)?\s*', '', new_code, flags=re.IGNORECASE)
+              new_code = re.sub(r'```$', '', new_code.strip())
+
+              with open(file_path, "w", encoding="utf-8") as f:
+                  f.write(new_code)
+                  
+              print("✅ AI successfully engineered and rewrote the massive code!")
+
+          if __name__ == "__main__":
+              main()
+          EOF
+          
+          python ai_brain.py
+
+      - name: 5. Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "feat: automated game upgrade for Issue #${{ github.event.issue.number }}"
-          title: "🤖 AI Update: ${{ github.event.issue.title }}"
-          body: "This PR was engineered automatically by **Gemini 1.5 Pro** based on Issue #${{ github.event.issue.number }}. \n\nReview the code and merge if satisfactory! 🚀"
-          branch: "ai-feature-${{ github.event.issue.number }}"
+          commit-message: "feat: Auto-coded Mega Update by Gemini 1.5 Pro for #${{ github.event.issue.number }}"
+          title: "🚀 AI Game Update: ${{ github.event.issue.title }}"
+          body: "This Mega-Update was automatically coded by the **Ultimate Mastermind AI (Gemini 1.5 Pro)** to resolve Issue #${{ github.event.issue.number }}.\n\nReview the code below and merge! 🎮"
+          branch: "ai-mega-update-${{ github.event.issue.number }}"
           delete-branch: true
