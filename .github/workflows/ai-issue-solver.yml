@@ -1,4 +1,4 @@
-name: Ultimate AI Game Developer
+name: Ultimate AI Game Developer (vMAX)
 
 on:
   issues:
@@ -10,51 +10,107 @@ permissions:
   issues: write
 
 jobs:
-  auto-code-generator:
+  ultimate-ai-coder:
+    name: 🧠 Massive AI Engine Processing
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45 # বড় কাজের জন্য সময় বাড়িয়ে দেওয়া হলো
 
     steps:
-      - name: 1. Checkout Repository
+      - name: 🚀 1. Checkout Game Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: 2. Set up Python Environment
+      - name: 🐍 2. Setup Python Ultra Environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11' # লেটেস্ট স্টেবল পাইথন
 
-      - name: 3. Install Requirements
-        run: pip install requests
-
-      - name: 4. Create and Execute AI Brain
+      - name: ⚙️ 3. Execute The Ultimate AI Brain (No External Modules Needed)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
-          cat << 'EOF' > ai_brain.py
+          cat << 'EOF' > ultimate_ai_brain.py
           import os
-          import json
-          import requests
           import sys
+          import json
+          import time
           import re
+          import urllib.request
+          import urllib.error
 
           def main():
+              print("==================================================")
+              print("🚀 INITIATING ULTIMATE AI GAME DEVELOPER ENGINE...")
+              print("==================================================")
+              
               api_key = os.environ.get("GEMINI_API_KEY")
               if not api_key:
-                  print("❌ Error: GEMINI_API_KEY is missing!")
+                  print("❌ CRITICAL ERROR: GEMINI_API_KEY is missing from GitHub Secrets.")
                   sys.exit(1)
 
-              issue_title = os.environ.get("ISSUE_TITLE", "No Title")
-              issue_body = os.environ.get("ISSUE_BODY", "No Body")
+              issue_title = os.environ.get("ISSUE_TITLE", "Game Update")
+              issue_body = os.environ.get("ISSUE_BODY", "Update the game features")
               file_path = "index.html"
+
+              # =========================================================
+              # STEP 1: DYNAMIC MODEL SCANNER (PREVENTS 404 ERRORS FOREVER)
+              # =========================================================
+              print("\n📡 Scanning Google Servers for Active AI Models...")
+              list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
               
+              try:
+                  req = urllib.request.Request(list_url)
+                  with urllib.request.urlopen(req) as response:
+                      models_data = json.loads(response.read().decode('utf-8'))
+              except Exception as e:
+                  print(f"❌ ERROR: Failed to connect to Google API: {e}")
+                  sys.exit(1)
+
+              available_models = []
+              for m in models_data.get("models", []):
+                  # Check if the model supports generating content
+                  if "generateContent" in m.get("supportedGenerationMethods", []):
+                      available_models.append(m.get("name"))
+
+              if not available_models:
+                  print("❌ ERROR: No active models found for your API key.")
+                  sys.exit(1)
+
+              # 🧠 Smart Engine: Always pick the absolute best available model!
+              selected_model = available_models[0]
+              for m in available_models:
+                  if "3.0" in m and "flash" in m:
+                      selected_model = m
+                      break
+                  elif "2.5" in m and "flash" in m:
+                      selected_model = m
+                  elif "1.5" in m and "pro" in m:
+                      selected_model = m
+                  elif "1.5" in m and "flash" in m and "3.0" not in selected_model:
+                      selected_model = m
+
+              print(f"✅ SUCCESS: System Auto-Selected Best Engine -> {selected_model}")
+
+              # Ensure model prefix is correct
+              model_endpoint = selected_model if selected_model.startswith("models/") else f"models/{selected_model}"
+
+              # =========================================================
+              # STEP 2: READ CURRENT GAME CODE
+              # =========================================================
               current_code = ""
               if os.path.exists(file_path):
                   with open(file_path, "r", encoding="utf-8") as f:
                       current_code = f.read()
+              else:
+                  print(f"⚠️ Warning: {file_path} not found. AI will create it from scratch.")
 
-              prompt = f"""You are an elite expert game developer. Refactor and upgrade the HTML5 Canvas game. Make it ultra-smooth, high-graphics, and highly standard.
+              # =========================================================
+              # STEP 3: CONSTRUCT MASSIVE PROMPT
+              # =========================================================
+              prompt = f"""You are an elite, senior game developer. Refactor, upgrade, and add features to the HTML5 game based on the GitHub issue below.
               
               Issue Title: {issue_title}
               Issue Description: {issue_body}
@@ -63,16 +119,16 @@ jobs:
               {current_code}
               
               STRICT RULES:
-              1. Provide ONLY valid HTML/CSS/JS code. No explanations.
-              2. Do NOT use external files. Write everything inside a single HTML file.
-              3. DO NOT output markdown blocks like ```html. Start exactly with <!DOCTYPE html> and end with </html>.
+              1. Return ONLY valid, highly optimized, and bug-free HTML/CSS/JS code. No explanations, no pleasantries.
+              2. DO NOT include markdown formatting (Do NOT output ```html or ```).
+              3. The code must start exactly with <!DOCTYPE html> and end with </html>.
+              4. Everything must remain in a single file (`index.html`). Do not use external CSS/JS files.
+              5. Ensure buttery smooth 60FPS and premium design.
               """
 
-              # 🚀 FIX: Directly using the brand new model requested by Google
-              model_name = "gemini-3.0-flash"
-              url = f"[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){model_name}:generateContent?key={api_key}"
+              # Construct raw clean URL without any brackets or formatting issues
+              url = "https://generativelanguage.googleapis.com/v1beta/" + model_endpoint + ":generateContent?key=" + api_key
               
-              headers = {"Content-Type": "application/json"}
               payload = {
                   "contents": [{"parts": [{"text": prompt}]}],
                   "generationConfig": {
@@ -80,40 +136,62 @@ jobs:
                       "maxOutputTokens": 8192
                   }
               }
+              
+              data = json.dumps(payload).encode('utf-8')
+              headers = {"Content-Type": "application/json"}
 
-              print(f"⏳ Sending Direct API request to {model_name}... Please wait.")
-              try:
-                  response = requests.post(url, headers=headers, json=payload, timeout=1200)
-                  response.raise_for_status()
-                  data = response.json()
-                  
-                  new_code = data["candidates"][0]["content"]["parts"][0]["text"]
-                  
-                  # Clean up markdown formats
-                  new_code = re.sub(r'^```(html|javascript|css)?\s*', '', new_code, flags=re.IGNORECASE)
-                  new_code = re.sub(r'```$', '', new_code.strip())
-
-                  with open(file_path, "w", encoding="utf-8") as f:
-                      f.write(new_code)
+              # =========================================================
+              # STEP 4: SEND REQUEST WITH AUTO-RETRY SYSTEM
+              # =========================================================
+              max_retries = 3
+              
+              for attempt in range(1, max_retries + 1):
+                  print(f"\n⏳ Attempt {attempt}/{max_retries}: Writing Code via {model_endpoint}... (This takes a few minutes)")
+                  try:
+                      req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+                      with urllib.request.urlopen(req, timeout=1200) as response:
+                          result = json.loads(response.read().decode('utf-8'))
                       
-                  print(f"✅ AI successfully engineered the game using the powerful {model_name}!")
-              except Exception as e:
-                  print(f"❌ Error during generation: {e}")
-                  if 'response' in locals() and hasattr(response, 'text'):
-                      print(f"API Error Details: {response.text}")
-                  sys.exit(1)
+                      new_code = result["candidates"][0]["content"]["parts"][0]["text"]
+                      
+                      # =========================================================
+                      # STEP 5: CLEANUP & SAVE
+                      # =========================================================
+                      new_code = re.sub(r'^```(html|javascript|css)?\s*', '', new_code, flags=re.IGNORECASE)
+                      new_code = re.sub(r'```$', '', new_code.strip())
+
+                      with open(file_path, "w", encoding="utf-8") as f:
+                          f.write(new_code)
+                          
+                      print("\n🎉 BOOM! AI successfully engineered the ultimate game code without any errors!")
+                      sys.exit(0)
+                      
+                  except urllib.error.HTTPError as e:
+                      error_body = e.read().decode('utf-8')
+                      print(f"❌ HTTP Error {e.code} on attempt {attempt}:\n{error_body}")
+                      if attempt < max_retries:
+                          print("🔄 Retrying in 10 seconds...")
+                          time.sleep(10)
+                  except Exception as e:
+                      print(f"❌ System Error on attempt {attempt}: {e}")
+                      if attempt < max_retries:
+                          print("🔄 Retrying in 10 seconds...")
+                          time.sleep(10)
+
+              print("\n🚨 CRITICAL: All retries failed. Process Terminated.")
+              sys.exit(1)
 
           if __name__ == "__main__":
               main()
           EOF
           
-          python ai_brain.py
+          python ultimate_ai_brain.py
 
-      - name: 5. Create Pull Request
+      - name: 📦 4. Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "feat: Mega AI Update via Gemini 3.0"
-          title: "🚀 Ultra Game Update: ${{ github.event.issue.title }}"
-          body: "This update was flawlessly generated using the brand new Gemini 3.0 Flash API."
-          branch: "ultra-update-${{ github.event.issue.number }}"
+          commit-message: "feat: Ultimate AI Upgrade applied"
+          title: "🚀 Massive Game Update: ${{ github.event.issue.title }}"
+          body: "This powerful update was generated seamlessly by the Ultimate AI Auto-Scanner Engine."
+          branch: "ultimate-update-${{ github.event.issue.number }}"
           delete-branch: true
