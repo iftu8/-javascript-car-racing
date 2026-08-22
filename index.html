@@ -1,35 +1,145 @@
-*Self-Correction on "No Markdown Blocks"*: If I don't use markdown blocks, the user's interface might interpret the code as plain text. However, the instruction is "DO NOT output ```html markdown blocks". I will follow this. I will provide the raw code.
+*   Role: Elite, senior game developer.
+    *   Task: Refactor, upgrade, and add features to an HTML5 game.
+    *   Goal: "Pro-Max V2 Update: Ultimate Cyberpunk 3D Racing Engine".
+    *   Key Features:
+        *   Pseudo-3D (Outrun-style) engine (curves, hills, parallax).
+        *   Cyberpunk aesthetics (neon, glow, particles, scanlines).
+        *   Physics (acceleration, friction, steering, collision, progressive difficulty).
+        *   Pro UI/UX (Main Menu, HUD with Speed/Score/Health/High Score, Game Over).
+        *   Optimized Loop (60+ FPS).
+    *   Constraints:
+        *   NO conversational text.
+        *   NO markdown code blocks (no ````html`).
+        *   VALID CODE ONLY (starts with `<!DOCTYPE html>`).
+        *   Single file `index.html`.
+        *   Bug-free, production-ready.
 
-    *Wait, if I provide raw code without markdown, the LLM might fail to format it correctly in the chat window, but the instruction is explicit. I will provide the raw code.*
+    *   *Pseudo-3D Engine*: This is the "Outrun" technique. It uses a projection of 3D coordinates to 2D screen space.
+        *   Road segments: An array of objects containing `z`, `curve`, `y` (for hills), `color`.
+        *   Projection: `x_screen = center + (x_3d * scale)`, `y_screen = center + (y_3d * scale)`.
+        *   Z-buffering/Sorting: Draw from back to front.
+    *   *Graphics*:
+        *   Canvas API.
+        *   `globalCompositeOperation = 'lighter'` or `'screen'` for neon glows.
+        *   Parallax background: Layers of cityscapes/mountains moving at different speeds.
+    *   *Physics*:
+        *   Player object: `x`, `y`, `speed`, `health`, `score`.
+        *   Input: Keyboard (Arrows/WASD).
+        *   Collision: Check player `x` against road boundaries and enemy `z`/`x` positions.
+    *   *UI*:
+        *   HTML/CSS overlay for the HUD and Menus.
+        *   `localStorage` for high scores.
 
-    *Wait, looking at the prompt again: "Please rewrite the index.html structure purely as code so the game actually renders in the browser window without exposing raw text."* This implies the user wants the content of the file.
+    *   *HTML Structure*:
+        *   `<canvas>` for the game.
+        *   `<div id="ui">` for menus and HUD.
+    *   *CSS*:
+        *   Cyberpunk fonts (system fonts like 'Orbitron' or generic sans-serif with neon styling).
+        *   Neon glow effects (`text-shadow`, `box-shadow`).
+        *   Scanline overlay (linear-gradient).
+    *   *JavaScript*:
+        *   `Constants`: Colors, segment length, road width, etc.
+        *   `State`: `gameState` (MENU, PLAYING, GAMEOVER).
+        *   `Classes/Objects`: `Player`, `Segment`, `Enemy`, `Particle`.
+        *   `Engine`: `update()`, `draw()`, `loop()`.
 
-    *Let's refine the "AAA" visuals*:
-    - Use `ctx.globalCompositeOperation = 'screen'` for neon effects.
-    - Use a "Scanline" overlay for the cyberpunk look.
-    - Use a "Chromatic Aberration" effect by slightly offsetting the red/blue channels (simulated via two draw calls if possible, or just a subtle overlay).
+    *   *Road Generation*:
+        *   Create a loop to generate segments.
+        *   Vary `curve` and `y` (height) using sine waves or random walks.
+    *   *Rendering Loop*:
+        1.  Clear canvas.
+        2.  Draw background (parallax).
+        3.  Calculate visible segments based on player `z`.
+        4.  Draw road segments (alternating colors for the "striped" look).
+        5.  Draw roadside objects (neon poles, obstacles).
+        6.  Draw enemies.
+        7.  Draw player car.
+        8.  Draw particles (sparks).
+        9.  Draw HUD.
 
-    *Let's refine the "Physics"*:
-    - `speed` max: 300.
-    - `acceleration`: 0.5.
-    - `friction`: 0.98.
-    - `handling`: 0.05.
+    *   *Collision Detection*:
+        *   If player `z` matches enemy `z` and player `x` is close to enemy `x` -> Collision.
+        *   If player `x` is outside road bounds -> Friction/Damage.
 
-    *Let's refine the "Road"*:
-    - Segments: 500.
-    - Segment length: 200.
-    - Curve: Randomly changing.
-    - Hill: Sine wave.
+    *   *Performance*:
+        *   Use `requestAnimationFrame`.
+        *   Minimize object creation in the loop.
 
-    *Let's refine the "Sprites"*:
-    - Enemy cars: Move at a constant speed, if player hits them, `health -= 20`.
-    - Roadblocks: Static, if player hits them, `speed *= 0.5`.
+    *   *Issue*: Pseudo-3D can be tricky with hills.
+    *   *Fix*: Ensure the `y` projection accounts for the segment's height and the camera's height.
+    *   *Issue*: "No markdown blocks" instruction.
+    *   *Action*: I must output the raw text starting with `<!DOCTYPE html>`.
 
-    *Let's refine the "UI"*:
-    - Speed: `Math.floor(speed * 2) + " KM/H"`.
-    - Health: `[||||||----]`.
+    *   *Visuals*:
+        *   Road: Dark grey with neon cyan/magenta stripes.
+        *   Sky: Dark purple/black with stars.
+        *   City: Silhouette with neon windows.
+        *   Player: Neon-lit car shape.
 
-    *Final check on the "Ruby" requirement*:
-    - I'll add a commented-out block at the bottom of the script showing the Sinatra/Ruby code that would handle the score submission.
+    *   *Physics Details*:
+        *   `acceleration`: 0.2.
+        *   `friction`: 0.98.
+        *   `maxSpeed`: 200.
+        *   `steering`: 0.04.
 
-    *Ready to generate.*
+    *   *UI Details*:
+        *   Speedometer: Large, glowing.
+        *   Health: A bar that turns red as it depletes.
+
+    *   *Pseudo-3D Math*:
+        *   `scale = focalLength / (segment.z - player.z)`
+        *   `screenX = (canvas.width/2) + (segment.x - player.x) * scale`
+        *   `screenY = (canvas.height/2) - (segment.y - player.y) * scale`
+
+    *   *Road Segments*:
+        *   `segments = []`
+        *   `for (i=0; i<total; i++) segments.push({z, curve, y, color})`
+
+    *   *Enemy Logic*:
+        *   `enemies = []`
+        *   Spawn enemies at random `z` ahead of player.
+        *   Move them towards player or keep them at constant speed.
+
+    *   *Particles*:
+        *   `particles = []`
+        *   On collision, spawn 10-20 particles with random velocity and life.
+
+    *   *Check*: Does it start with `<!DOCTYPE html>`? Yes.
+    *   *Check*: Is it one file? Yes.
+    *   *Check*: No markdown? Yes.
+    *   *Check*: No conversational text? Yes.
+    *   *Check*: Is the logic sound?
+        *   The pseudo-3D math needs to be robust.
+        *   The `z` coordinate must be handled carefully (player `z` increases, segments are drawn based on `z - player.z`).
+
+    *   *Self-Correction during drafting*:
+        *   The road rendering needs to handle the "horizon" correctly.
+        *   The `draw` function needs to loop through segments from the furthest visible to the closest.
+
+    *   *Final Polish*:
+        *   Add a "Scanline" effect using a CSS overlay.
+        *   Add a "Bloom" effect using `shadowBlur` on the canvas context for neon elements.
+
+    *   *Wait, the prompt says "NO markdown blocks (like ````html`)".* This is a very specific instruction. I will provide the code as raw text.
+
+    *   *Code Structure*:
+        1.  `<!DOCTYPE html>`
+        2.  `<style>` (Cyberpunk theme)
+        3.  `<div id="ui">` (Menus/HUD)
+        4.  `<canvas>`
+        5.  `<script>` (The Engine)
+
+    *   *Engine Logic Detail*:
+        *   `project(p, cameraX, cameraY, cameraZ, cameraDepth, width, height)`
+        *   `drawRoad()`: Loops through segments.
+        *   `drawPlayer()`: Draws a stylized car.
+        *   `update()`: Handles physics and input.
+
+    *   *Collision*:
+        *   `if (Math.abs(player.x - enemy.x) < roadWidth && Math.abs(player.z - enemy.z) < segmentLength)`
+
+    *   *Difficulty*:
+        *   `difficulty = 1 + (score / 10000)`
+        *   `enemySpeed = baseSpeed * difficulty`
+
+    *   *Let's write the code.*
