@@ -13,7 +13,7 @@ jobs:
   ultimate-ai-coder:
     name: 🧠 Massive AI Engine Processing
     runs-on: ubuntu-latest
-    timeout-minutes: 45 # বড় কাজের জন্য সময় বাড়িয়ে দেওয়া হলো
+    timeout-minutes: 45
 
     steps:
       - name: 🚀 1. Checkout Game Repository
@@ -24,92 +24,38 @@ jobs:
       - name: 🐍 2. Setup Python Ultra Environment
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # লেটেস্ট স্টেবল পাইথন
+          python-version: '3.11'
 
-      - name: ⚙️ 3. Execute The Ultimate AI Brain (No External Modules Needed)
+      - name: ⚙️ 3. Execute The VIP AI Brain
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           cat << 'EOF' > ultimate_ai_brain.py
-          import os
-          import sys
-          import json
-          import time
-          import re
-          import urllib.request
-          import urllib.error
+          import os, sys, json, time, re, urllib.request, urllib.error
 
           def main():
               print("==================================================")
-              print("🚀 INITIATING ULTIMATE AI GAME DEVELOPER ENGINE...")
+              print("🚀 INITIATING ULTIMATE AI VIP ENGINE...")
               print("==================================================")
               
               api_key = os.environ.get("GEMINI_API_KEY")
               if not api_key:
-                  print("❌ CRITICAL ERROR: GEMINI_API_KEY is missing from GitHub Secrets.")
+                  print("❌ CRITICAL ERROR: GEMINI_API_KEY is missing!")
                   sys.exit(1)
 
               issue_title = os.environ.get("ISSUE_TITLE", "Game Update")
-              issue_body = os.environ.get("ISSUE_BODY", "Update the game features")
+              issue_body = os.environ.get("ISSUE_BODY", "Update features")
               file_path = "index.html"
-
-              # =========================================================
-              # STEP 1: DYNAMIC MODEL SCANNER (PREVENTS 404 ERRORS FOREVER)
-              # =========================================================
-              print("\n📡 Scanning Google Servers for Active AI Models...")
-              list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
               
-              try:
-                  req = urllib.request.Request(list_url)
-                  with urllib.request.urlopen(req) as response:
-                      models_data = json.loads(response.read().decode('utf-8'))
-              except Exception as e:
-                  print(f"❌ ERROR: Failed to connect to Google API: {e}")
-                  sys.exit(1)
-
-              available_models = []
-              for m in models_data.get("models", []):
-                  # Check if the model supports generating content
-                  if "generateContent" in m.get("supportedGenerationMethods", []):
-                      available_models.append(m.get("name"))
-
-              if not available_models:
-                  print("❌ ERROR: No active models found for your API key.")
-                  sys.exit(1)
-
-              # 🧠 Smart Engine: Always pick the absolute best available model!
-              selected_model = available_models[0]
-              for m in available_models:
-                  if "3.0" in m and "flash" in m:
-                      selected_model = m
-                      break
-                  elif "2.5" in m and "flash" in m:
-                      selected_model = m
-                  elif "1.5" in m and "pro" in m:
-                      selected_model = m
-                  elif "1.5" in m and "flash" in m and "3.0" not in selected_model:
-                      selected_model = m
-
-              print(f"✅ SUCCESS: System Auto-Selected Best Engine -> {selected_model}")
-
-              # Ensure model prefix is correct
-              model_endpoint = selected_model if selected_model.startswith("models/") else f"models/{selected_model}"
-
-              # =========================================================
-              # STEP 2: READ CURRENT GAME CODE
-              # =========================================================
               current_code = ""
               if os.path.exists(file_path):
                   with open(file_path, "r", encoding="utf-8") as f:
                       current_code = f.read()
               else:
-                  print(f"⚠️ Warning: {file_path} not found. AI will create it from scratch.")
+                  print(f"⚠️ Warning: {file_path} not found. Creating from scratch.")
 
-              # =========================================================
-              # STEP 3: CONSTRUCT MASSIVE PROMPT
-              # =========================================================
               prompt = f"""You are an elite, senior game developer. Refactor, upgrade, and add features to the HTML5 game based on the GitHub issue below.
               
               Issue Title: {issue_title}
@@ -119,67 +65,63 @@ jobs:
               {current_code}
               
               STRICT RULES:
-              1. Return ONLY valid, highly optimized, and bug-free HTML/CSS/JS code. No explanations, no pleasantries.
-              2. DO NOT include markdown formatting (Do NOT output ```html or ```).
-              3. The code must start exactly with <!DOCTYPE html> and end with </html>.
-              4. Everything must remain in a single file (`index.html`). Do not use external CSS/JS files.
-              5. Ensure buttery smooth 60FPS and premium design.
+              1. Return ONLY valid, optimized HTML/CSS/JS code. No explanations.
+              2. DO NOT output ```html markdown blocks.
+              3. Start exactly with <!DOCTYPE html> and end with </html>.
+              4. Everything must remain in a single file (`index.html`).
               """
 
-              # Construct raw clean URL without any brackets or formatting issues
-              url = "https://generativelanguage.googleapis.com/v1beta/" + model_endpoint + ":generateContent?key=" + api_key
-              
               payload = {
                   "contents": [{"parts": [{"text": prompt}]}],
-                  "generationConfig": {
-                      "temperature": 0.2,
-                      "maxOutputTokens": 8192
-                  }
+                  "generationConfig": {"temperature": 0.2, "maxOutputTokens": 8192}
               }
-              
               data = json.dumps(payload).encode('utf-8')
               headers = {"Content-Type": "application/json"}
 
-              # =========================================================
-              # STEP 4: SEND REQUEST WITH AUTO-RETRY SYSTEM
-              # =========================================================
-              max_retries = 3
-              
-              for attempt in range(1, max_retries + 1):
-                  print(f"\n⏳ Attempt {attempt}/{max_retries}: Writing Code via {model_endpoint}... (This takes a few minutes)")
+              # 🏆 VIP List of Models (No auto-scanner confusion, just the best coding models)
+              vip_models = [
+                  "gemini-1.5-pro",
+                  "gemini-1.5-flash",
+                  "gemini-2.0-flash",
+                  "gemini-3.0-flash"
+              ]
+
+              success = False
+              for model in vip_models:
+                  print(f"\n📡 Trying VIP Model: {model} ...")
+                  url = f"[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){model}:generateContent?key={api_key}"
+                  
                   try:
                       req = urllib.request.Request(url, data=data, headers=headers, method="POST")
                       with urllib.request.urlopen(req, timeout=1200) as response:
                           result = json.loads(response.read().decode('utf-8'))
-                      
+                          
                       new_code = result["candidates"][0]["content"]["parts"][0]["text"]
-                      
-                      # =========================================================
-                      # STEP 5: CLEANUP & SAVE
-                      # =========================================================
                       new_code = re.sub(r'^```(html|javascript|css)?\s*', '', new_code, flags=re.IGNORECASE)
                       new_code = re.sub(r'```$', '', new_code.strip())
 
                       with open(file_path, "w", encoding="utf-8") as f:
                           f.write(new_code)
                           
-                      print("\n🎉 BOOM! AI successfully engineered the ultimate game code without any errors!")
-                      sys.exit(0)
-                      
-                  except urllib.error.HTTPError as e:
-                      error_body = e.read().decode('utf-8')
-                      print(f"❌ HTTP Error {e.code} on attempt {attempt}:\n{error_body}")
-                      if attempt < max_retries:
-                          print("🔄 Retrying in 10 seconds...")
-                          time.sleep(10)
-                  except Exception as e:
-                      print(f"❌ System Error on attempt {attempt}: {e}")
-                      if attempt < max_retries:
-                          print("🔄 Retrying in 10 seconds...")
-                          time.sleep(10)
+                      print(f"🎉 BOOM! AI successfully generated code using {model}!")
+                      success = True
+                      break # ✅ Job done, exit the loop!
 
-              print("\n🚨 CRITICAL: All retries failed. Process Terminated.")
-              sys.exit(1)
+                  except urllib.error.HTTPError as e:
+                      error_msg = e.read().decode('utf-8')
+                      if e.code == 429:
+                          print(f"⚠️ Quota Exceeded (429) for {model}. Trying next model...")
+                      elif e.code == 404:
+                          print(f"⚠️ Model {model} not found (404). Trying next model...")
+                      else:
+                          print(f"❌ HTTP {e.code} for {model}: {error_msg}")
+                  except Exception as e:
+                      print(f"❌ Error with {model}: {e}")
+
+              if not success:
+                  print("\n🚨 CRITICAL: All VIP models failed. Your API Key quota is completely exhausted!")
+                  print("👉 PLEASE GENERATE A BRAND NEW API KEY FROM GOOGLE AI STUDIO.")
+                  sys.exit(1)
 
           if __name__ == "__main__":
               main()
@@ -190,8 +132,8 @@ jobs:
       - name: 📦 4. Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "feat: Ultimate AI Upgrade applied"
+          commit-message: "feat: Ultimate AI Upgrade via VIP Engine"
           title: "🚀 Massive Game Update: ${{ github.event.issue.title }}"
-          body: "This powerful update was generated seamlessly by the Ultimate AI Auto-Scanner Engine."
+          body: "This update was generated perfectly using the VIP Model Fallback Engine."
           branch: "ultimate-update-${{ github.event.issue.number }}"
           delete-branch: true
