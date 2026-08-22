@@ -23,8 +23,8 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: 3. Install Official Google AI SDK
-        run: pip install google-generativeai
+      - name: 3. Install Requirements
+        run: pip install requests
 
       - name: 4. Create and Execute AI Brain
         env:
@@ -34,44 +34,16 @@ jobs:
         run: |
           cat << 'EOF' > ai_brain.py
           import os
+          import json
+          import requests
           import sys
           import re
-          import google.generativeai as genai
 
           def main():
               api_key = os.environ.get("GEMINI_API_KEY")
               if not api_key:
                   print("❌ Error: GEMINI_API_KEY is missing!")
                   sys.exit(1)
-
-              genai.configure(api_key=api_key)
-
-              print("🔍 Scanning your API Key for available models...")
-              available_models = []
-              try:
-                  for m in genai.list_models():
-                      if 'generateContent' in m.supported_generation_methods:
-                          available_models.append(m.name)
-              except Exception as e:
-                  print(f"❌ Failed to list models: {e}")
-                  sys.exit(1)
-              
-              if not available_models:
-                  print("❌ Error: Your API key does not have access to any content generation models.")
-                  sys.exit(1)
-                  
-              # 🎯 Auto-detect the best model
-              selected_model = available_models[0]
-              for m in available_models:
-                  if '1.5-flash' in m:
-                      selected_model = m
-                      break
-                  elif '1.5-pro' in m:
-                      selected_model = m
-                  elif '1.0-pro' in m and '1.5' not in selected_model:
-                      selected_model = m
-
-              print(f"🎯 Perfectly Selected Model: {selected_model}")
 
               issue_title = os.environ.get("ISSUE_TITLE", "No Title")
               issue_body = os.environ.get("ISSUE_BODY", "No Body")
@@ -96,24 +68,39 @@ jobs:
               3. DO NOT output markdown blocks like ```html. Start exactly with <!DOCTYPE html> and end with </html>.
               """
 
-              print(f"⏳ Sending request to {selected_model}... This might take a few minutes.")
+              # 🚀 FIX: Directly using the brand new model requested by Google
+              model_name = "gemini-3.0-flash"
+              url = f"[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){model_name}:generateContent?key={api_key}"
+              
+              headers = {"Content-Type": "application/json"}
+              payload = {
+                  "contents": [{"parts": [{"text": prompt}]}],
+                  "generationConfig": {
+                      "temperature": 0.2,
+                      "maxOutputTokens": 8192
+                  }
+              }
+
+              print(f"⏳ Sending Direct API request to {model_name}... Please wait.")
               try:
-                  # Use the exact model name fetched from Google's servers
-                  clean_model_name = selected_model.replace('models/', '')
-                  model = genai.GenerativeModel(clean_model_name)
-                  response = model.generate_content(prompt)
+                  response = requests.post(url, headers=headers, json=payload, timeout=1200)
+                  response.raise_for_status()
+                  data = response.json()
                   
-                  new_code = response.text
+                  new_code = data["candidates"][0]["content"]["parts"][0]["text"]
                   
+                  # Clean up markdown formats
                   new_code = re.sub(r'^```(html|javascript|css)?\s*', '', new_code, flags=re.IGNORECASE)
                   new_code = re.sub(r'```$', '', new_code.strip())
 
                   with open(file_path, "w", encoding="utf-8") as f:
                       f.write(new_code)
                       
-                  print(f"✅ AI successfully engineered the game using {clean_model_name}!")
+                  print(f"✅ AI successfully engineered the game using the powerful {model_name}!")
               except Exception as e:
                   print(f"❌ Error during generation: {e}")
+                  if 'response' in locals() and hasattr(response, 'text'):
+                      print(f"API Error Details: {response.text}")
                   sys.exit(1)
 
           if __name__ == "__main__":
@@ -125,8 +112,8 @@ jobs:
       - name: 5. Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          commit-message: "feat: Extended Ultra AI Update"
+          commit-message: "feat: Mega AI Update via Gemini 3.0"
           title: "🚀 Ultra Game Update: ${{ github.event.issue.title }}"
-          body: "This update was perfectly generated using dynamic model selection."
+          body: "This update was flawlessly generated using the brand new Gemini 3.0 Flash API."
           branch: "ultra-update-${{ github.event.issue.number }}"
           delete-branch: true
