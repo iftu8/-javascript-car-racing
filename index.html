@@ -1,183 +1,380 @@
-/**
- * ============================================================================
- * 🚀 NEXT-GEN WEBGL GAME ENGINE (AAA ARCHITECTURE)
- * ============================================================================
- * Features:
- * - Entity-Component-System (ECS) Architecture
- * - Three.js WebGL Rendering with PBR Materials
- * - Advanced Post-Processing (Bloom, SSAO, FXAA)
- * - Multi-threaded Physics Engine (Cannon-es / Ammo.js)
- * - Dynamic Asset Streaming & Memory Management
- */
-
-import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import * as CANNON from 'cannon-es';
-
-// ==========================================
-// 1. ENTITY COMPONENT SYSTEM (ECS)
-// ==========================================
-class Entity {
-    constructor(id) {
-        this.id = id;
-        this.components = new Map();
-    }
-    addComponent(component) {
-        this.components.set(component.constructor.name, component);
-    }
-    getComponent(componentClass) {
-        return this.components.get(componentClass.name);
-    }
-}
-
-// ==========================================
-// 2. CORE GAME ENGINE
-// ==========================================
-class UltimateGameEngine {
-    constructor() {
-        this.entities = [];
-        this.lastTime = performance.now();
-        this.isRunning = false;
-
-        // Core Systems
-        this.initRenderer();
-        this.initPhysics();
-        this.initPostProcessing();
-        this.initEnvironment();
-    }
-
-    /**
-     * Initialize High-Fidelity WebGL Renderer
-     */
-    initRenderer() {
-        this.scene = new THREE.Scene();
-        this.scene.fog = new THREE.FogExp2(0x000000, 0.002);
-
-        this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Racer - JS Edition</title>
+    <style>
+        /* CSS Reset & Basic Styling */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            background-color: #1a1a1a; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            overflow: hidden; 
+        }
         
-        this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        this.renderer.toneMappingExposure = 1.2;
-        this.renderer.shadowMap.enabled = true;
-        this.renderer.shadowMap.type = THREE.VSMShadowMap; // Soft volumetric shadows
+        /* Game Container */
+        #gameContainer { 
+            position: relative; 
+            width: 400px; 
+            height: 650px; 
+            background-color: #555; 
+            border: 4px solid #333; 
+            border-radius: 8px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7); 
+            overflow: hidden; 
+        }
 
-        document.body.appendChild(this.renderer.domElement);
-        window.addEventListener('resize', () => this.onWindowResize());
-    }
+        /* Canvas Setup */
+        canvas { 
+            display: block; 
+            width: 100%; 
+            height: 100%; 
+        }
 
-    /**
-     * Initialize Post-Processing for "AAA" Look
-     */
-    initPostProcessing() {
-        this.composer = new EffectComposer(this.renderer);
+        /* Score Board UI */
+        #scoreBoard { 
+            position: absolute; 
+            top: 15px; 
+            left: 20px; 
+            color: #fff; 
+            font-size: 24px; 
+            font-weight: 800; 
+            z-index: 10; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8); 
+            background: rgba(0,0,0,0.4);
+            padding: 5px 15px;
+            border-radius: 5px;
+        }
+
+        /* UI Overlays (Start & Game Over) */
+        .ui-layer { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: rgba(0,0,0,0.85); 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            text-align: center; 
+            color: white; 
+            z-index: 20; 
+        }
         
-        const renderPass = new RenderPass(this.scene, this.camera);
-        this.composer.addPass(renderPass);
+        .hidden { display: none !important; }
+        
+        h1 { color: #f1c40f; font-size: 40px; margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase; }
+        p { font-size: 16px; line-height: 1.6; color: #ccc; margin-bottom: 25px; }
+        b { color: #3498db; }
+        
+        /* Buttons */
+        button { 
+            padding: 15px 40px; 
+            font-size: 18px; 
+            font-weight: bold; 
+            background-color: #e74c3c; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            transition: background 0.3s, transform 0.1s; 
+            text-transform: uppercase; 
+        }
+        button:hover { background-color: #c0392b; transform: scale(1.05); }
+        button:active { transform: scale(0.95); }
+    </style>
+</head>
+<body>
 
-        // Bloom for Neon/Sunlight glow
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.2;
-        bloomPass.strength = 1.2;
-        bloomPass.radius = 0.5;
-        this.composer.addPass(bloomPass);
-    }
+    <div id="gameContainer">
+        <!-- Score Display -->
+        <div id="scoreBoard">Score: <span id="scoreVal">0</span></div>
+        
+        <!-- Main Game Canvas -->
+        <canvas id="gameCanvas" width="400" height="650"></canvas>
 
-    /**
-     * Initialize Multi-threaded Physics World
-     */
-    initPhysics() {
-        this.physicsWorld = new CANNON.World({
-            gravity: new CANNON.Vec3(0, -9.81, 0),
+        <!-- Start Screen -->
+        <div id="startScreen" class="ui-layer">
+            <h1>Traffic Racer</h1>
+            <p>Dodge the traffic to survive!<br><br>Controls:<br><b>[Left / Right Arrow]</b> - Steer<br><b>[Up Arrow]</b> - Accelerate<br><b>[Down Arrow]</b> - Brake</p>
+            <button id="startBtn">Start Engine</button>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="ui-layer hidden">
+            <h1 style="color: #e74c3c;">CRASHED!</h1>
+            <p>You survived for a while.<br>Final Score: <span id="finalScore" style="font-weight: bold; color: #f1c40f; font-size: 24px;">0</span></p>
+            <button id="restartBtn">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Game Constants & Global Variables
+         */
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('scoreVal');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScoreElement = document.getElementById('finalScore');
+        
+        let animationId;
+        let gameActive = false;
+        let score = 0;
+        let gameSpeed = 4;
+        let frameCount = 0;
+
+        // Key tracking
+        const keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false
+        };
+
+        // Event Listeners for Controls
+        window.addEventListener('keydown', (e) => {
+            if(keys.hasOwnProperty(e.key)) keys[e.key] = true;
         });
-        this.physicsWorld.broadphase = new CANNON.SAPBroadphase(this.physicsWorld);
-        this.physicsWorld.solver.iterations = 10;
-        
-        // Default Asphalt friction
-        const groundMaterial = new CANNON.Material('ground');
-        const wheelMaterial = new CANNON.Material('wheel');
-        const wheelGroundContact = new CANNON.ContactMaterial(groundMaterial, wheelMaterial, {
-            friction: 0.8,
-            restitution: 0.1,
-            contactEquationStiffness: 1000,
+        window.addEventListener('keyup', (e) => {
+            if(keys.hasOwnProperty(e.key)) keys[e.key] = false;
         });
-        this.physicsWorld.addContactMaterial(wheelGroundContact);
-    }
 
-    /**
-     * Setup Photorealistic Environment
-     */
-    initEnvironment() {
-        // Global Illumination setup
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.6);
-        hemiLight.position.set(0, 200, 0);
-        this.scene.add(hemiLight);
+        // UI Event Listeners
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-        dirLight.position.set(100, 200, -100);
-        dirLight.castShadow = true;
-        dirLight.shadow.camera.top = 100;
-        dirLight.shadow.camera.bottom = -100;
-        dirLight.shadow.camera.left = -100;
-        dirLight.shadow.camera.right = 100;
-        dirLight.shadow.mapSize.width = 4096; // 4K Shadows
-        dirLight.shadow.mapSize.height = 4096;
-        this.scene.add(dirLight);
-    }
+        /**
+         * Classes for Game Objects
+         */
 
-    /**
-     * Asset Manager for Dynamic Loading (Simulating 2GB asset loads)
-     */
-    async loadAssets() {
-        console.log("Initializing Asset Streamer...");
-        // In a real 2GB game, this streams chunks of the map.
-        // const gltfLoader = new GLTFLoader();
-        // this.cityModel = await gltfLoader.loadAsync('./assets/models/gta_city_chunk_1.glb');
-        // this.scene.add(this.cityModel.scene);
-    }
+        // Road Class: Handles the scrolling road and lane markings
+        class Road {
+            constructor() {
+                this.y = 0;
+                this.laneWidth = canvas.width / 3;
+            }
+            draw() {
+                // Background
+                ctx.fillStyle = '#555';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw Lane Dividers (Dashed lines)
+                ctx.fillStyle = '#fff';
+                for (let i = 1; i < 3; i++) {
+                    for (let j = this.y - 100; j < canvas.height; j += 60) {
+                        ctx.fillRect(i * this.laneWidth - 2, j, 4, 30);
+                    }
+                }
 
-    /**
-     * The Main Game Loop (60/120 FPS)
-     */
-    update() {
-        if (!this.isRunning) return;
+                // Road Borders (Grass/Sidewalk illusion)
+                ctx.fillStyle = '#2ecc71';
+                ctx.fillRect(0, 0, 15, canvas.height); // Left grass
+                ctx.fillRect(canvas.width - 15, 0, 15, canvas.height); // Right grass
+            }
+            update() {
+                // Scroll effect based on game speed
+                this.y += gameSpeed;
+                if (this.y >= 60) this.y = 0;
+            }
+        }
 
-        requestAnimationFrame(() => this.update());
+        // Car Class: Base class for Player and Enemies
+        class Car {
+            constructor(x, y, width, height, color) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.color = color;
+            }
+            draw() {
+                // Draw car body (Rounded Rectangle approach)
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.roundRect(this.x, this.y, this.width, this.height, 5);
+                ctx.fill();
 
-        const currentTime = performance.now();
-        const deltaTime = (currentTime - this.lastTime) / 1000;
-        this.lastTime = currentTime;
+                // Draw windshield
+                ctx.fillStyle = '#34495e';
+                ctx.fillRect(this.x + 5, this.y + 10, this.width - 10, 15);
+                
+                // Draw rear window
+                ctx.fillRect(this.x + 5, this.y + this.height - 15, this.width - 10, 10);
+                
+                // Draw headlights if it's the player (or taillights)
+                ctx.fillStyle = (this.color === '#e74c3c') ? '#f1c40f' : '#e74c3c';
+                ctx.fillRect(this.x + 3, this.y, 8, 4); // Left light
+                ctx.fillRect(this.x + this.width - 11, this.y, 8, 4); // Right light
+            }
+        }
 
-        // 1. Step Physics
-        this.physicsWorld.step(1 / 60, deltaTime, 3);
+        // Player extends Car
+        class Player extends Car {
+            constructor() {
+                const width = 40;
+                const height = 70;
+                // Center the car initially
+                super(canvas.width / 2 - width / 2, canvas.height - height - 20, width, height, '#e74c3c'); 
+                this.speed = 5;
+            }
+            update() {
+                // Horizontal Movement
+                if (keys.ArrowLeft && this.x > 15) {
+                    this.x -= this.speed;
+                }
+                if (keys.ArrowRight && this.x < canvas.width - this.width - 15) {
+                    this.x += this.speed;
+                }
+                
+                // Speed Control (Acceleration & Braking)
+                if (keys.ArrowUp) {
+                    gameSpeed = Math.min(gameSpeed + 0.1, 12);
+                } else if (keys.ArrowDown) {
+                    gameSpeed = Math.max(gameSpeed - 0.2, 2);
+                } else {
+                    // Gradual return to base speed
+                    if (gameSpeed > 5 + (score / 1000)) gameSpeed -= 0.05;
+                }
+            }
+        }
 
-        // 2. Sync Physics with Graphics (ECS System update)
-        // syncEntities(this.entities);
+        // Enemy extends Car
+        class Enemy extends Car {
+            constructor(x, y) {
+                const width = 40;
+                const height = 70;
+                const colors = ['#3498db', '#f1c40f', '#9b59b6', '#ecf0f1', '#e67e22'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                super(x, y, width, height, randomColor);
+                // Slower than game speed so it seems they are moving forward but we pass them
+                this.speed = Math.random() * 2 + 1; 
+            }
+            update() {
+                // Move down screen based on global game speed minus their own speed
+                this.y += (gameSpeed - this.speed);
+            }
+        }
 
-        // 3. Render Scene with Post-Processing
-        this.composer.render();
-    }
+        /**
+         * Core Engine Setup
+         */
+        let road;
+        let player;
+        let enemies = [];
 
-    start() {
-        this.isRunning = true;
-        this.lastTime = performance.now();
-        this.update();
-    }
+        function init() {
+            road = new Road();
+            player = new Player();
+            enemies = [];
+            score = 0;
+            gameSpeed = 5;
+            frameCount = 0;
+            scoreElement.innerText = score;
+        }
 
-    onWindowResize() {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.composer.setSize(window.innerWidth, window.innerHeight);
-    }
-}
+        // AABB Collision Detection Engine
+        function checkCollision(rect1, rect2) {
+            return (
+                rect1.x < rect2.x + rect2.width &&
+                rect1.x + rect1.width > rect2.x &&
+                rect1.y < rect2.y + rect2.height &&
+                rect1.y + rect1.height > rect2.y
+            );
+        }
 
-// Bootstrapping the Game Engine
-const game = new UltimateGameEngine();
-game.loadAssets().then(() => {
-    game.start();
-    console.log("🚀 AAA Engine Started Successfully!");
-});
+        function spawnEnemy() {
+            // Adjust spawn rate based on speed
+            const spawnRate = Math.max(40, 100 - (gameSpeed * 2)); 
+            
+            if (frameCount % Math.floor(spawnRate) === 0) {
+                const laneWidth = canvas.width / 3;
+                const lanes = [
+                    15 + (laneWidth/2) - 20, 
+                    15 + laneWidth + (laneWidth/2) - 20, 
+                    15 + (laneWidth*2) + (laneWidth/2) - 20
+                ];
+                // Pick a random lane
+                const randomX = lanes[Math.floor(Math.random() * lanes.length)];
+                enemies.push(new Enemy(randomX, -100));
+            }
+        }
+
+        /**
+         * Main Game Loop
+         */
+        function gameLoop() {
+            if (!gameActive) return;
+
+            // Clear Canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Update & Draw Environment
+            road.update();
+            road.draw();
+
+            // Handle Enemies
+            spawnEnemy();
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                enemy.update();
+                enemy.draw();
+
+                // Check for Crash
+                if (checkCollision(player, enemy)) {
+                    gameOver();
+                    return;
+                }
+
+                // Remove enemies that pass off-screen and add score
+                if (enemy.y > canvas.height) {
+                    enemies.splice(i, 1);
+                    score += 10;
+                    scoreElement.innerText = score;
+                    
+                    // Slightly increase base difficulty as score goes up
+                    if(score % 100 === 0) {
+                        gameSpeed += 0.5;
+                    }
+                }
+            }
+
+            // Update & Draw Player
+            player.update();
+            player.draw();
+
+            frameCount++;
+            score += Math.floor(gameSpeed / 5); // Passive score from driving
+            if(frameCount % 10 === 0) scoreElement.innerText = score;
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        /**
+         * Game State Management
+         */
+        function startGame() {
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            init();
+            gameActive = true;
+            gameLoop();
+        }
+
+        function gameOver() {
+            gameActive = false;
+            cancelAnimationFrame(animationId);
+            finalScoreElement.innerText = score;
+            gameOverScreen.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
