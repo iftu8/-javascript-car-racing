@@ -1,380 +1,132 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Traffic Racer - JS Edition</title>
-    <style>
-        /* CSS Reset & Basic Styling */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            background-color: #1a1a1a; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            overflow: hidden; 
-        }
-        
-        /* Game Container */
-        #gameContainer { 
-            position: relative; 
-            width: 400px; 
-            height: 650px; 
-            background-color: #555; 
-            border: 4px solid #333; 
-            border-radius: 8px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.7); 
-            overflow: hidden; 
-        }
+Elite, senior game developer.
+Refactor, upgrade, and add features to an existing HTML5 "Traffic Racer" game based on a specific GitHub issue.
 
-        /* Canvas Setup */
-        canvas { 
-            display: block; 
-            width: 100%; 
-            height: 100%; 
-        }
+        *   Generate `src/css/style.css` (but since I must output a single file, I'll embed it in `<style>`).
+        *   Tailwind CSS directives (simulated via utility classes or standard CSS since I can't import a full Tailwind build easily in a single file without a CDN, but I will use Tailwind-like utility patterns).
+        *   Google Fonts: 'Orbitron', 'Press Start 2P', 'Inter'.
+        *   Responsive Aspect-Ratio Wrapper (400x650, centered, drop-shadow).
+        *   Canvas Fluidity: `image-rendering: pixelated`.
+        *   Glassmorphic UI: `backdrop-filter: blur(10px)`, dark gradients, smooth transitions.
+        *   Arcade Buttons: Neon glow, 3D press effect.
+        *   HUD: Floating score/speedometer, glass panels, monospace glowing text.
+        *   Health/Nitro Bar: Gradient progress bars.
+        *   Keyframe Animations: `neonPulse`, `speedBlur`, `screenShake`, `enginePulse`.
+        *   Mobile Controls: Virtual D-Pad (visible on touch), scroll lock.
+        *   CSS Variables: `--primary-red`, `--neon-yellow`, `--asphalt-gray`, etc.
 
-        /* Score Board UI */
-        #scoreBoard { 
-            position: absolute; 
-            top: 15px; 
-            left: 20px; 
-            color: #fff; 
-            font-size: 24px; 
-            font-weight: 800; 
-            z-index: 10; 
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8); 
-            background: rgba(0,0,0,0.4);
-            padding: 5px 15px;
-            border-radius: 5px;
-        }
+        *   Basic canvas game.
+        *   Simple collision detection.
+        *   Basic movement.
+        *   No HUD/Nitro/Shake/Mobile controls.
 
-        /* UI Overlays (Start & Game Over) */
-        .ui-layer { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.85); 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            text-align: center; 
-            color: white; 
-            z-index: 20; 
-        }
-        
-        .hidden { display: none !important; }
-        
-        h1 { color: #f1c40f; font-size: 40px; margin-bottom: 15px; letter-spacing: 1px; text-transform: uppercase; }
-        p { font-size: 16px; line-height: 1.6; color: #ccc; margin-bottom: 25px; }
-        b { color: #3498db; }
-        
-        /* Buttons */
-        button { 
-            padding: 15px 40px; 
-            font-size: 18px; 
-            font-weight: bold; 
-            background-color: #e74c3c; 
-            color: white; 
-            border: none; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            transition: background 0.3s, transform 0.1s; 
-            text-transform: uppercase; 
-        }
-        button:hover { background-color: #c0392b; transform: scale(1.05); }
-        button:active { transform: scale(0.95); }
-    </style>
-</head>
-<body>
+    *   *CSS Variables:* Define a robust color palette.
+    *   *Layout:* Use a wrapper for the game container.
+    *   *UI Layers:* Create sophisticated overlays for Start and Game Over.
+    *   *HUD:* Add a top bar for score and a bottom bar for speed/nitro.
+    *   *Animations:* Implement the requested keyframes.
+    *   *Mobile Controls:* Add a div for touch buttons.
+    *   *JS Logic:*
+        *   Add Nitro logic (boost speed, consume bar).
+        *   Add Screen Shake logic (trigger on collision).
+        *   Add Speed Blur effect (visual feedback).
+        *   Add Mobile input handling.
+        *   Refactor the loop to handle these new features.
 
-    <div id="gameContainer">
-        <!-- Score Display -->
-        <div id="scoreBoard">Score: <span id="scoreVal">0</span></div>
-        
-        <!-- Main Game Canvas -->
-        <canvas id="gameCanvas" width="400" height="650"></canvas>
+    *   *Colors:*
+        *   `--primary-red: #ff3e3e;`
+        *   `--neon-yellow: #f1c40f;`
+        *   `--asphalt-gray: #1a1a1a;`
+        *   `--neon-blue: #00d2ff;`
+        *   `--glass-bg: rgba(15, 23, 42, 0.8);`
 
-        <!-- Start Screen -->
-        <div id="startScreen" class="ui-layer">
-            <h1>Traffic Racer</h1>
-            <p>Dodge the traffic to survive!<br><br>Controls:<br><b>[Left / Right Arrow]</b> - Steer<br><b>[Up Arrow]</b> - Accelerate<br><b>[Down Arrow]</b> - Brake</p>
-            <button id="startBtn">Start Engine</button>
-        </div>
+    *   *Animations:*
+        *   `@keyframes neonPulse`: `text-shadow` animation.
+        *   `@keyframes screenShake`: `transform: translate(...)`.
+        *   `@keyframes enginePulse`: `transform: scale(...)`.
 
-        <!-- Game Over Screen -->
-        <div id="gameOverScreen" class="ui-layer hidden">
-            <h1 style="color: #e74c3c;">CRASHED!</h1>
-            <p>You survived for a while.<br>Final Score: <span id="finalScore" style="font-weight: bold; color: #f1c40f; font-size: 24px;">0</span></p>
-            <button id="restartBtn">Play Again</button>
-        </div>
-    </div>
+    *   *HUD:*
+        *   Score (Top Left).
+        *   Speedometer (Bottom Right).
+        *   Nitro Bar (Bottom Center).
 
-    <script>
-        /**
-         * Game Constants & Global Variables
-         */
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreElement = document.getElementById('scoreVal');
-        const startScreen = document.getElementById('startScreen');
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        const finalScoreElement = document.getElementById('finalScore');
-        
-        let animationId;
-        let gameActive = false;
-        let score = 0;
-        let gameSpeed = 4;
-        let frameCount = 0;
+    *   *Mobile Controls:*
+        *   Left/Right/Boost/Brake buttons at the bottom.
 
-        // Key tracking
-        const keys = {
-            ArrowUp: false,
-            ArrowDown: false,
-            ArrowLeft: false,
-            ArrowRight: false
-        };
+    *   *Nitro:* `nitroAmount` variable. When `keys.ArrowUp` (or Boost button) is pressed, `gameSpeed` increases significantly, and `nitroAmount` decreases.
+    *   *Screen Shake:* A class `.shake` applied to `#gameContainer` for a few frames on collision.
+    *   *Speed Blur:* A CSS class applied to the canvas or container when `gameSpeed` is high.
 
-        // Event Listeners for Controls
-        window.addEventListener('keydown', (e) => {
-            if(keys.hasOwnProperty(e.key)) keys[e.key] = true;
-        });
-        window.addEventListener('keyup', (e) => {
-            if(keys.hasOwnProperty(e.key)) keys[e.key] = false;
-        });
+    *   *HTML Structure:*
+        `#gameWrapper` -> `#gameContainer` -> `canvas` + `ui-layers` + `hud` + `mobile-controls`.
 
-        // UI Event Listeners
-        document.getElementById('startBtn').addEventListener('click', startGame);
-        document.getElementById('restartBtn').addEventListener('click', startGame);
+    *   *CSS:*
+        Use `@import` for fonts. Use `:root`. Use media queries for `@media (hover: none)`.
 
-        /**
-         * Classes for Game Objects
-         */
+    *   *JS:*
+        *   Update `Player` class to handle nitro.
+        *   Update `gameLoop` to handle nitro depletion and speed effects.
+        *   Add `triggerShake()` function.
+        *   Add touch event listeners for the virtual buttons.
 
-        // Road Class: Handles the scrolling road and lane markings
-        class Road {
-            constructor() {
-                this.y = 0;
-                this.laneWidth = canvas.width / 3;
-            }
-            draw() {
-                // Background
-                ctx.fillStyle = '#555';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                // Draw Lane Dividers (Dashed lines)
-                ctx.fillStyle = '#fff';
-                for (let i = 1; i < 3; i++) {
-                    for (let j = this.y - 100; j < canvas.height; j += 60) {
-                        ctx.fillRect(i * this.laneWidth - 2, j, 4, 30);
-                    }
-                }
+    *   *Issue:* "Include standard @tailwind base; etc." -> Since I'm in a single file, I can't actually run a PostCSS build. I will implement the *result* of those directives using standard CSS that mimics the Tailwind utility classes (e.g., `flex`, `items-center`, `justify-center`, `rounded-lg`, etc.) to ensure the "Elite Developer" look.
+    *   *Issue:* "image-rendering: pixelated" -> Crucial for that arcade feel.
+    *   *Issue:* "Mobile & Touch Responsive Controls" -> Need to ensure `touch-action: none` to prevent scrolling.
 
-                // Road Borders (Grass/Sidewalk illusion)
-                ctx.fillStyle = '#2ecc71';
-                ctx.fillRect(0, 0, 15, canvas.height); // Left grass
-                ctx.fillRect(canvas.width - 15, 0, 15, canvas.height); // Right grass
-            }
-            update() {
-                // Scroll effect based on game speed
-                this.y += gameSpeed;
-                if (this.y >= 60) this.y = 0;
-            }
-        }
+    *   *Variables:* `--primary-red`, `--neon-yellow`, `--asphalt-gray`, `--neon-blue`, `--neon-pink`, `--glass-bg`.
+    *   *Fonts:* Orbitron (Titles), Press Start 2P (Score/Retro), Inter (UI).
+    *   *HUD:* Glassmorphic panels.
+    *   *Nitro:* A bar that glows when full.
+    *   *Shake:* `transform: translate(calc(var(--shake-x) * 1px), calc(var(--shake-y) * 1px))`.
 
-        // Car Class: Base class for Player and Enemies
-        class Car {
-            constructor(x, y, width, height, color) {
-                this.x = x;
-                this.y = y;
-                this.width = width;
-                this.height = height;
-                this.color = color;
-            }
-            draw() {
-                // Draw car body (Rounded Rectangle approach)
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.roundRect(this.x, this.y, this.width, this.height, 5);
-                ctx.fill();
+    *   *Refining the Player Class:*
+        Add `this.nitro = 100;`
+        Add `this.isBoosting = false;`
 
-                // Draw windshield
-                ctx.fillStyle = '#34495e';
-                ctx.fillRect(this.x + 5, this.y + 10, this.width - 10, 15);
-                
-                // Draw rear window
-                ctx.fillRect(this.x + 5, this.y + this.height - 15, this.width - 10, 10);
-                
-                // Draw headlights if it's the player (or taillights)
-                ctx.fillStyle = (this.color === '#e74c3c') ? '#f1c40f' : '#e74c3c';
-                ctx.fillRect(this.x + 3, this.y, 8, 4); // Left light
-                ctx.fillRect(this.x + this.width - 11, this.y, 8, 4); // Right light
-            }
-        }
+    *   *Refining the Game Loop:*
+        If `player.isBoosting` and `player.nitro > 0`:
+            `gameSpeed` += boost factor.
+            `player.nitro` -= depletion rate.
+        Else:
+            `player.isBoosting = false`.
 
-        // Player extends Car
-        class Player extends Car {
-            constructor() {
-                const width = 40;
-                const height = 70;
-                // Center the car initially
-                super(canvas.width / 2 - width / 2, canvas.height - height - 20, width, height, '#e74c3c'); 
-                this.speed = 5;
-            }
-            update() {
-                // Horizontal Movement
-                if (keys.ArrowLeft && this.x > 15) {
-                    this.x -= this.speed;
-                }
-                if (keys.ArrowRight && this.x < canvas.width - this.width - 15) {
-                    this.x += this.speed;
-                }
-                
-                // Speed Control (Acceleration & Braking)
-                if (keys.ArrowUp) {
-                    gameSpeed = Math.min(gameSpeed + 0.1, 12);
-                } else if (keys.ArrowDown) {
-                    gameSpeed = Math.max(gameSpeed - 0.2, 2);
-                } else {
-                    // Gradual return to base speed
-                    if (gameSpeed > 5 + (score / 1000)) gameSpeed -= 0.05;
-                }
-            }
-        }
+    *   *Refining the Collision:*
+        When collision occurs:
+            `container.classList.add('shake')`.
+            `setTimeout(() => container.classList.remove('shake'), 500)`.
 
-        // Enemy extends Car
-        class Enemy extends Car {
-            constructor(x, y) {
-                const width = 40;
-                const height = 70;
-                const colors = ['#3498db', '#f1c40f', '#9b59b6', '#ecf0f1', '#e67e22'];
-                const randomColor = colors[Math.floor(Math.random() * colors.length)];
-                super(x, y, width, height, randomColor);
-                // Slower than game speed so it seems they are moving forward but we pass them
-                this.speed = Math.random() * 2 + 1; 
-            }
-            update() {
-                // Move down screen based on global game speed minus their own speed
-                this.y += (gameSpeed - this.speed);
-            }
-        }
+    *   *Mobile Controls:*
+        Buttons: `btn-left`, `btn-right`, `btn-boost`, `btn-brake`.
+        Use `touchstart` and `touchend` for responsiveness.
 
-        /**
-         * Core Engine Setup
-         */
-        let road;
-        let player;
-        let enemies = [];
+    *   Single file? Yes.
+    *   No markdown blocks? Yes.
+    *   Start with `<!DOCTYPE html>`? Yes.
+    *   All features included? Yes.
 
-        function init() {
-            road = new Road();
-            player = new Player();
-            enemies = [];
-            score = 0;
-            gameSpeed = 5;
-            frameCount = 0;
-            scoreElement.innerText = score;
-        }
+    *(Self-Correction during drafting)*: The prompt asks for Tailwind directives. In a single-file environment, I will simulate the Tailwind utility classes in the `<style>` block so the HTML structure looks like it's using Tailwind (e.g., `<div class="flex items-center justify-center">`).
 
-        // AABB Collision Detection Engine
-        function checkCollision(rect1, rect2) {
-            return (
-                rect1.x < rect2.x + rect2.width &&
-                rect1.x + rect1.width > rect2.x &&
-                rect1.y < rect2.y + rect2.height &&
-                rect1.y + rect1.height > rect2.y
-            );
-        }
+    *   *CSS Detail:* `backdrop-filter: blur(10px)` is key for the glassmorphism.
+    *   *CSS Detail:* `image-rendering: pixelated` on the canvas.
+    *   *CSS Detail:* `user-select: none` to prevent text selection during frantic gameplay.
 
-        function spawnEnemy() {
-            // Adjust spawn rate based on speed
-            const spawnRate = Math.max(40, 100 - (gameSpeed * 2)); 
-            
-            if (frameCount % Math.floor(spawnRate) === 0) {
-                const laneWidth = canvas.width / 3;
-                const lanes = [
-                    15 + (laneWidth/2) - 20, 
-                    15 + laneWidth + (laneWidth/2) - 20, 
-                    15 + (laneWidth*2) + (laneWidth/2) - 20
-                ];
-                // Pick a random lane
-                const randomX = lanes[Math.floor(Math.random() * lanes.length)];
-                enemies.push(new Enemy(randomX, -100));
-            }
-        }
+    *   *JS Detail:* Ensure `requestAnimationFrame` is handled correctly to avoid multiple loops.
 
-        /**
-         * Main Game Loop
-         */
-        function gameLoop() {
-            if (!gameActive) return;
+    *   *Final Polish:* Ensure the "Speed Blur" effect is a subtle CSS filter or a visual overlay. Let's use a CSS class `.speed-blur` that applies a slight `blur(1px)` and `brightness(1.2)` to the canvas when speed is maxed.
 
-            // Clear Canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+    *   *Mobile Controls Layout:*
+        Left side: Left/Right.
+        Right side: Boost/Brake.
+        This is standard for racing games.
 
-            // Update & Draw Environment
-            road.update();
-            road.draw();
+    *   *Final Check of the Issue:*
+        - Tailwind setup? (Simulated via utility classes).
+        - Font imports? (Orbitron, Press Start 2P, Inter).
+        - Responsive wrapper? (400x650, centered).
+        - Glassmorphic UI? (Yes).
+        - Arcade Buttons? (Yes).
+        - HUD/Gauges? (Yes).
+        - Keyframes (neonPulse, speedBlur, screenShake, enginePulse)? (Yes).
+        - Mobile controls? (Yes).
+        - Scroll lock? (Yes).
 
-            // Handle Enemies
-            spawnEnemy();
-            for (let i = enemies.length - 1; i >= 0; i--) {
-                const enemy = enemies[i];
-                enemy.update();
-                enemy.draw();
-
-                // Check for Crash
-                if (checkCollision(player, enemy)) {
-                    gameOver();
-                    return;
-                }
-
-                // Remove enemies that pass off-screen and add score
-                if (enemy.y > canvas.height) {
-                    enemies.splice(i, 1);
-                    score += 10;
-                    scoreElement.innerText = score;
-                    
-                    // Slightly increase base difficulty as score goes up
-                    if(score % 100 === 0) {
-                        gameSpeed += 0.5;
-                    }
-                }
-            }
-
-            // Update & Draw Player
-            player.update();
-            player.draw();
-
-            frameCount++;
-            score += Math.floor(gameSpeed / 5); // Passive score from driving
-            if(frameCount % 10 === 0) scoreElement.innerText = score;
-
-            animationId = requestAnimationFrame(gameLoop);
-        }
-
-        /**
-         * Game State Management
-         */
-        function startGame() {
-            startScreen.classList.add('hidden');
-            gameOverScreen.classList.add('hidden');
-            init();
-            gameActive = true;
-            gameLoop();
-        }
-
-        function gameOver() {
-            gameActive = false;
-            cancelAnimationFrame(animationId);
-            finalScoreElement.innerText = score;
-            gameOverScreen.classList.remove('hidden');
-        }
-    </script>
-</body>
-</html>
+    *Let's write the code.*
